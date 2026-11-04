@@ -1,16 +1,29 @@
-# React + Vite
+# Berhan Bank Role Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend is organized by role so each role can grow independently:
 
-Currently, two official plugins are available:
+- `src/modules/ambassador/` - Ambassador dashboard
+- `src/modules/service-desk-manager/` - Service Desk Manager dashboard
+- `src/modules/branch-manager/` - Branch Manager dashboard
+- `src/shared/` - reusable dashboard UI
+- `src/features/auth/` - mock session handling
+- `src/config/roles.js` - role definitions and dashboard data
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Mock login
 
-## React Compiler
+Run the app with `npm run dev`, then use one of these hardcoded mock accounts:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Role | Username | Password |
+| --- | --- | --- |
+| Ambassador | `ambassador` | `ambassador123` |
+| Service Desk Manager | `service.manager` | `service123` |
+| Branch Manager | `branch.manager` | `branch123` |
 
-## Expanding the ESLint configuration
+The authenticated role is stored in `sessionStorage` and only its dashboard route is accessible:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `/dashboard/ambassador`
+- `/dashboard/service-desk-manager`
+- `/dashboard/branch-manager`
+
+The mock session can be replaced by a backend authentication service through
+the helpers in `src/features/auth/auth.js`.

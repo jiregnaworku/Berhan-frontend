@@ -1,26 +1,43 @@
-import { useEffect } from 'react'
-import HomePage from './pages/home page.jsx'
+import { getRoleByRoute } from './config/roles.js'
+import { getAuthenticatedUser } from './features/auth/auth.js'
+import AmbassadorDashboard from './modules/ambassador/AmbassadorDashboard.jsx'
+import BranchManagerDashboard from './modules/branch-manager/BranchManagerDashboard.jsx'
+import BranchEntry from './modules/ambassador/branchentry.jsx'
+import Network from './modules/ambassador/network.jsx'
+import ServiceDeskManagerDashboard from './modules/service-desk-manager/ServiceDeskManagerDashboard.jsx'
 import LoginPage from './pages/login page.jsx'
-
-function RedirectToLogin() {
-  useEffect(() => {
-    window.location.replace('/login')
-  }, [])
-
-  return null
-}
 
 function App() {
   const path = window.location.pathname
+  const user = getAuthenticatedUser()
+  const role = getRoleByRoute(path)
 
-  if (path === '/home') {
-    const isAuthenticated =
-      sessionStorage.getItem('berhan-authenticated') === 'true'
-
-    return isAuthenticated ? <HomePage /> : <RedirectToLogin />
+  if (!role) {
+    return <LoginPage />
   }
 
-  return <LoginPage />
+  if (!user || user.role !== role.id) {
+    window.location.replace('/login')
+    return null
+  }
+
+  if (path === '/dashboard/ambassador/branches') {
+    return <BranchEntry username={user.username} />
+  }
+
+  if (path === '/dashboard/ambassador/network') {
+    return <Network username={user.username} />
+  }
+
+  if (role.id === 'ambassador') {
+    return <AmbassadorDashboard username={user.username} />
+  }
+
+  if (role.id === 'service-desk-manager') {
+    return <ServiceDeskManagerDashboard username={user.username} />
+  }
+
+  return <BranchManagerDashboard username={user.username} />
 }
 
 export default App
