@@ -2,7 +2,7 @@ const SESSION_KEY = 'berhan-authenticated'
 
 export function getAuthenticatedUser() {
   try {
-    const user = JSON.parse(sessionStorage.getItem(SESSION_KEY))
+    const user = JSON.parse(sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY))
     return user && user.role && user.username ? user : null
   } catch {
     return null
@@ -26,6 +26,7 @@ export async function authenticateUser(username, password) {
   const { user } = await response.json()
   const session = { username: user.username, role: user.role }
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
   return session
 }
 
@@ -38,5 +39,6 @@ export async function clearSession() {
     })
   } finally {
     sessionStorage.removeItem(SESSION_KEY)
+    localStorage.removeItem(SESSION_KEY)
   }
 }

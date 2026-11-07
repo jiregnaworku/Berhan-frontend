@@ -1,10 +1,13 @@
 const fieldMap = {
   branchName: 'branch_name',
+  branchCode: 'branch_code',
+  branchType: 'branch_type',
   branchLocation: 'branch_location',
   ambassadorName: 'ambassador_name',
   ambassadorPhone: 'ambassador_phone',
   backupName: 'backup_name',
   backupPhone: 'backup_phone',
+  backupUsername: 'backup_username',
   managerName: 'manager_name',
   managerPhone: 'manager_phone',
   assistantName: 'assistant_name',
@@ -12,7 +15,13 @@ const fieldMap = {
   displayTvIp: 'display_tv_ip',
   kasperskyServerIp: 'kaspersky_server_ip',
   workingComputers: 'working_computers',
+  createdBy: 'created_by',
 }
+
+const branchCacheTtl = 30_000
+let branchCache = null
+let branchCacheExpiresAt = 0
+let branchRequest = null
 
 function toApiBranch(branch) {
   return Object.fromEntries(
@@ -52,8 +61,28 @@ async function request(path, options = {}) {
 }
 
 export async function fetchBranches() {
-  const { branches } = await request('/branches')
-  return branches.map(fromApiBranch)
+  if (branchCache && Date.now() < branchCacheExpiresAt) {
+    return branchCache
+  }
+
+  if (branchRequest) return branchRequest
+
+  branchRequest = request('/branches')
+    .then(({ branches }) => {
+      branchCache = branches.map(fromApiBranch)
+      branchCacheExpiresAt = Date.now() + branchCacheTtl
+      return branchCache
+    })
+    .finally(() => {
+      branchRequest = null
+    })
+
+  return branchRequest
+}
+
+function clearBranchCache() {
+  branchCache = null
+  branchCacheExpiresAt = 0
 }
 
 export async function createBranch(branch) {
@@ -61,6 +90,7 @@ export async function createBranch(branch) {
     method: 'POST',
     body: JSON.stringify(toApiBranch(branch)),
   })
+  clearBranchCache()
   return fromApiBranch(savedBranch)
 }
 
@@ -69,9 +99,11 @@ export async function updateBranch(id, branch) {
     method: 'PUT',
     body: JSON.stringify(toApiBranch(branch)),
   })
+  clearBranchCache()
   return fromApiBranch(savedBranch)
 }
 
 export async function deleteBranch(id) {
   await request(`/branches/${id}`, { method: 'DELETE' })
+  clearBranchCache()
 }
