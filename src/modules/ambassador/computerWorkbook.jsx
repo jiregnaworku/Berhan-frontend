@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useDashboardToast } from '../../shared/components/dashboardToast.js'
 import { fetchBranches } from './branchStore.js'
+import { fetchAmbassadors } from '../service-desk-manager/ambassadorStore.js'
 import {
   createWorkbookRow,
   deleteWorkbookRow,
@@ -48,12 +49,17 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
   const [isSaving, setIsSaving] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [searchText, setSearchText] = useState('')
+  const [filterBranch, setFilterBranch] = useState('')
+  const [filterAmbassador, setFilterAmbassador] = useState('')
+  const [ambassadors, setAmbassadors] = useState([])
 
   useEffect(() => {
-    Promise.all([fetchBranches(), fetchWorkbookRows()])
-      .then(([loadedBranches, loadedRows]) => {
+    Promise.all([fetchBranches(), fetchWorkbookRows(), fetchAmbassadors()])
+      .then(([loadedBranches, loadedRows, loadedAmbassadors]) => {
         setBranches(isManager ? loadedBranches : loadedBranches.filter((branch) => branch.createdBy === username))
         setRows(loadedRows)
+        setAmbassadors(loadedAmbassadors)
       })
       .catch((loadError) => {
         setError(loadError.message)
@@ -117,6 +123,17 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
 
   const branchName = (branchId) => branches.find((branch) => String(branch.id) === String(branchId))?.branchName || 'Unknown branch'
 
+  const filteredRows = rows.filter((row) => {
+    const query = searchText.trim().toLowerCase()
+    const matchesSearch = !query
+      || String(row.ipAddress).toLowerCase().includes(query)
+      || String(row.computerName).toLowerCase().includes(query)
+    const matchesBranch = !filterBranch || String(row.branchId) === String(filterBranch)
+    const matchesAmbassador = !filterAmbassador
+      || String(row.ambassadorName).toLowerCase().includes(filterAmbassador.toLowerCase())
+    return matchesSearch && matchesBranch && matchesAmbassador
+  })
+
   return (
     <div className="mx-auto max-w-[90rem]">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -164,17 +181,53 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
         </div>
       </form>
       </div>}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-3">
+          <WorkbookSelect
+            name="filterBranch"
+            label="Search by branch"
+            value={filterBranch}
+            onChange={(event) => setFilterBranch(event.target.value)}
+          >
+            <option value="">All branches</option>
+            {branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>{branch.branchName}</option>
+            ))}
+          </WorkbookSelect>
+          <WorkbookSelect
+            name="filterAmbassador"
+            label="Search by ambassador"
+            value={filterAmbassador}
+            onChange={(event) => setFilterAmbassador(event.target.value)}
+          >
+            <option value="">All ambassadors</option>
+            {ambassadors.map((ambassador) => (
+              <option key={ambassador.id} value={ambassador.name}>{ambassador.name}</option>
+            ))}
+          </WorkbookSelect>
+          <div className="block">
+            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#52657d]">Search IP or computer name</span>
+            <input
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              placeholder="Type IP address or computer name..."
+              className="min-h-9 w-full rounded-md border border-[#dce4ee] bg-[#fbfcfe] px-2.5 text-xs text-[#1f2937] outline-none focus:border-[#1d5b9e] focus:ring-2 focus:ring-[#1d5b9e]/[0.14]"
+            />
+          </div>
+        </div>
+        <button type="button" onClick={() => { setSearchText(''); setFilterBranch(''); setFilterAmbassador('') }} className="rounded-md border border-[#dce4ee] px-3 py-2 text-xs font-semibold text-[#52657d] hover:border-[#1d5b9e]">Clear filters</button>
+      </div>
       <section className="mt-6 overflow-hidden rounded-xl border border-[#e5ebf2] bg-white shadow-[0_8px_24px_rgba(16,45,84,0.05)]">
         <div className="flex items-center justify-between border-b border-[#e4eaf0] bg-[#f4f8fa] px-4 py-3">
           <h2 className="text-sm font-bold text-[#075b78]">{isManager ? 'Saved computers' : 'My computers'}</h2>
-          <span className="text-[11px] text-[#52657d]">{rows.length} rows</span>
+          <span className="text-[11px] text-[#52657d]">{filteredRows.length} of {rows.length} computers</span>
         </div>
         <div className="overflow-x-auto">
           <div className="min-w-[58rem]">
             <div className="grid grid-cols-[1.2fr_1.1fr_1.2fr_0.8fr_0.9fr_0.9fr_auto] gap-3 border-b border-[#dfe8ee] px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-[#52657d]">
               <span>Branch</span><span>IP address</span><span>Computer name</span><span>Job</span><span>OS</span><span>Status</span><span>Actions</span>
             </div>
-            {isLoading ? <p className="px-4 py-8 text-sm text-[#718096]">Loading computers...</p> : rows.length === 0 ? <p className="px-4 py-8 text-sm text-[#718096]">No computers have been added yet.</p> : rows.map((row) => (
+            {isLoading ? <p className="px-4 py-8 text-sm text-[#718096]">Loading computers...</p> : filteredRows.length === 0 ? <p className="px-4 py-8 text-sm text-[#718096]">No computers match your filters.</p> : filteredRows.map((row) => (
               <div key={row.id} className="grid grid-cols-[1.2fr_1.1fr_1.2fr_0.8fr_0.9fr_0.9fr_auto] items-center gap-3 border-b border-[#edf1f5] px-4 py-3 text-xs text-[#52657d] last:border-0">
                 <span className="font-semibold text-[#102d54]">{branchName(row.branchId)}</span><span>{row.ipAddress}</span><span>{row.computerName || '—'}</span><span>{row.computerJob || '—'}</span><span>{row.operatingSystem}</span><span>{row.status}</span>
                 <div className="flex gap-3"><button type="button" onClick={() => editRow(row)} className="font-bold text-[#1d5b9e] hover:underline">Edit</button><button type="button" onClick={() => handleDelete(row.id)} className="font-bold text-[#c2413b] hover:underline">Delete</button></div>

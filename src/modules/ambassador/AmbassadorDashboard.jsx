@@ -20,6 +20,7 @@ function AmbassadorNavButton({ view, activeView, isSwitching, onClick, children 
 function AmbassadorDashboard({ username }) {
   const [activeView, setActiveView] = useState(window.location.pathname.endsWith('/settings') ? 'settings' : 'branches')
   const [isSwitching, setIsSwitching] = useState(false)
+  const [error, setError] = useState('')
 
   function showView(view) {
     setIsSwitching(true)
@@ -35,9 +36,10 @@ function AmbassadorDashboard({ username }) {
 
   const navAction = (
     <div className="flex flex-col items-stretch gap-1">
-      <AmbassadorNavButton view="network" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Network</AmbassadorNavButton>
-      <AmbassadorNavButton view="add-branch" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Add branch</AmbassadorNavButton>
-      <AmbassadorNavButton view="computer-workbook" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Computers</AmbassadorNavButton>
+       <AmbassadorNavButton view="add-branch" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Branch Management</AmbassadorNavButton>
+      <AmbassadorNavButton view="network" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Network Management</AmbassadorNavButton>
+    
+      <AmbassadorNavButton view="computer-workbook" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Computer Management</AmbassadorNavButton>
       <AmbassadorNavButton view="kaspersky" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Kaspersky Status</AmbassadorNavButton>
       <AmbassadorNavButton view="it-related-info" activeView={activeView} isSwitching={isSwitching} onClick={showView}>IT Related Info</AmbassadorNavButton>
       <AmbassadorNavButton view="settings" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Settings</AmbassadorNavButton>
@@ -60,6 +62,7 @@ function AmbassadorDashboard({ username }) {
         <ItRelatedInfoContent />
       ) : (
         <>
+          {error && <p className="mb-5 rounded-lg border border-[#f2c5c2] bg-[#fff7f6] p-3 text-sm text-[#c2413b]" role="alert">{error}</p>}
           <div className="mb-4">
             <p className="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-[#e09f1f]">Ambassador workspace</p>
             <h1 className="text-3xl font-bold text-[#102d54] sm:text-4xl">My branches</h1>

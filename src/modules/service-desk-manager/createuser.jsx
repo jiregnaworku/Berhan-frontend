@@ -106,6 +106,8 @@ export function CreateUser({ onCreated, username }) {
     try {
       await deleteUser(user.id)
       setUsers((current) => current.filter((item) => item.id !== user.id))
+      setSuccess('User deleted successfully.')
+      setTimeout(() => setSuccess(''), 4000)
     } catch (deleteError) {
       setError(deleteError.message)
     }
@@ -180,10 +182,10 @@ export function CreateUser({ onCreated, username }) {
           <label className="block col-span-2 sm:col-span-1">
             <span className="mb-1.5 block text-xs font-bold text-[#52657d]">Role</span>
             <select name="role" value={form.role} onChange={handleRoleChange} required className="min-h-10 w-full rounded-lg border border-[#dce4ee] bg-[#fbfcfe] px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#1d5b9e] focus:ring-[3px] focus:ring-[#1d5b9e]/[0.14]">
-              {['ambassador', 'service-desk-manager', 'branch-manager'].map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}
+              {['ambassador', 'service-desk-manager'].map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}
             </select>
           </label>
-          {form.role !== 'branch-manager' && <>
+          <>
             <Field label="First name" name="first_name" value={form.first_name} onChange={handleChange} autoComplete="given-name" />
             <Field label="Last name" name="last_name" value={form.last_name} onChange={handleChange} autoComplete="family-name" />
             <Field label="Username" name="username_preview" value={editingUser?.username || generatedUsername(form.first_name)} onChange={() => {}} autoComplete="username" required={false} readOnly />
@@ -191,33 +193,11 @@ export function CreateUser({ onCreated, username }) {
             <Field label="Email" name="email" value={form.email} onChange={handleChange} type="email" autoComplete="email" />
             <Field label="Phone number" name="phone" value={form.phone} onChange={handleChange} autoComplete="tel" />
             <Field label="ID number" name="id_number" value={form.id_number} onChange={handleChange} />
-          </>}
+          </>
 
-          {form.role === 'branch-manager' && <>
-            <Field label="Branch code" name="branch_code" value={form.branch_code} onChange={handleChange} type="number" autoComplete="username" />
-            <Field label="Branch name" name="branch_name" value={form.branch_name} onChange={handleChange} />
-            <Field label="Manager Name" name="manager_name" value={form.manager_name} onChange={handleChange} />
-            <Field label="Manager Phone number" name="manager_phone" value={form.manager_phone} onChange={handleChange} type="tel" />
-            <Field label="Assistance name" name="assistant_name" value={form.assistant_name} onChange={handleChange} required={false} />
-            <Field label="Assistance phone" name="assistant_mobile" value={form.assistant_mobile} onChange={handleChange} type="tel" required={false} />
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold text-[#52657d]">Ambassador</span>
-              <select name="ambassador" value={form.ambassador} onChange={handleChange} required={false} className="min-h-10 w-full rounded-lg border border-[#dce4ee] bg-[#fbfcfe] px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#1d5b9e] focus:ring-[3px] focus:ring-[#1d5b9e]/[0.14]">
-                <option value="">Select ambassador</option>
-                {ambassadors.map((a) => <option key={a.id} value={a.username}>{a.name} ({a.username})</option>)}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold text-[#52657d]">Backup ambassador</span>
-              <select name="backup_ambassador" value={form.backup_ambassador} onChange={handleChange} required={false} className="min-h-10 w-full rounded-lg border border-[#dce4ee] bg-[#fbfcfe] px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#1d5b9e] focus:ring-[3px] focus:ring-[#1d5b9e]/[0.14]">
-                <option value="">None</option>
-                {ambassadors.map((a) => <option key={a.id + '-backup'} value={a.username}>{a.name} ({a.username})</option>)}
-              </select>
-            </label>
-            <Field label="Backup ambassador phone" name="backup_ambassador_phone" value={form.backup_ambassador_phone} onChange={handleChange} type="tel" required={false} />
-          </>}
 
-          {editingUser && form.role !== 'branch-manager' && <><Field label="New password (optional)" name="password" value={form.password} onChange={handleChange} type="password" autoComplete="new-password" /><Field label="Confirm new password" name="password_confirmation" value={form.password_confirmation} onChange={handleChange} type="password" autoComplete="new-password" /></>}
+
+          {editingUser && <><Field label="New password (optional)" name="password" value={form.password} onChange={handleChange} type="password" autoComplete="new-password" /><Field label="Confirm new password" name="password_confirmation" value={form.password_confirmation} onChange={handleChange} type="password" autoComplete="new-password" /></>}
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
           <button type="submit" disabled={isSaving} className="rounded-lg bg-[#102d54] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1d5b9e] disabled:cursor-not-allowed disabled:opacity-70">{isSaving ? 'Saving...' : editingUser ? 'Save changes' : 'Create user'}</button>
@@ -233,7 +213,6 @@ export function CreateUser({ onCreated, username }) {
             <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="Filter users by role" className="h-9 rounded-lg border border-[#d6e0ea] bg-white px-3 text-xs text-[#172b4d] outline-none focus:border-[#1d5b9e]">
               <option value="all">All roles</option>
               <option value="ambassador">Ambassadors</option>
-              <option value="branch-manager">Branch managers</option>
               <option value="service-desk-manager">Service desk managers</option>
             </select>
           </div>

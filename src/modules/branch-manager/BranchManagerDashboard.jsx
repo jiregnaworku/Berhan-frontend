@@ -11,16 +11,26 @@ import { fetchProfile } from '../../shared/components/settingsStore.js'
 
 function BranchManagerDashboard({ username }) {
   const [activeView, setActiveView] = useState('overview')
+  const [branchName, setBranchName] = useState('')
   const navAction = (
     <div className="flex flex-col items-stretch gap-1">
-      <button type="button" onClick={() => setActiveView('our-branch')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'our-branch' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Our Branch</button>
+      <button type="button" onClick={() => setActiveView('our-branch')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'our-branch' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Our Branch Info</button>
       <button type="button" onClick={() => setActiveView('it-related-info')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'it-related-info' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>IT Related Info</button>
       <button type="button" onClick={() => setActiveView('settings')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'settings' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Settings</button>
     </div>
   )
 
+  useEffect(() => {
+    Promise.all([fetchProfile(), fetchBranches()])
+      .then(([profile, branches]) => {
+        const ownBranch = branches.find((item) => String(item.id) === String(profile.branch_id))
+        setBranchName(ownBranch?.branchName || '')
+      })
+      .catch(() => setBranchName(''))
+  }, [])
+
   return (
-    <DashboardLayout roleId="branch-manager" username={username} navAction={navAction} dashboardActive={activeView === 'overview'}>
+    <DashboardLayout roleId="branch-manager" username={username} branchName={branchName} navAction={navAction} dashboardActive={activeView === 'overview'}>
       {activeView === 'our-branch' ? <OurBranchContent /> : activeView === 'settings' ? <SettingsContent username={username} /> : activeView === 'it-related-info' ? <ItRelatedInfoContent /> : <BranchManagerOverview username={username} />}
     </DashboardLayout>
   )

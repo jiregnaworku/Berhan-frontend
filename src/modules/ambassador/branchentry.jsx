@@ -58,15 +58,20 @@ export function BranchEntryContent({ onBack, onSaved, username, roleId = 'ambass
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
+  const ambassador = ambassadors.find((item) => item.username === username)
+  const ambassadorName = ambassador?.name || ''
+
   useEffect(() => {
     Promise.all([
       fetchBranches(),
       fetchAmbassadors(),
     ]).then(([loadedBranches, loadedAmbassadors]) => {
-      setBranches(roleId === 'ambassador'
-        ? loadedBranches.filter((branch) => branch.createdBy === username)
-        : loadedBranches)
       setAmbassadors(loadedAmbassadors)
+      const ambassador = loadedAmbassadors.find((item) => item.username === username)
+      const ambassadorName = ambassador?.name || ''
+      setBranches(roleId === 'ambassador'
+        ? loadedBranches.filter((branch) => branch.createdBy === username || branch.ambassadorName === ambassadorName)
+        : loadedBranches)
     }).catch(() => {
       const message = 'Unable to load branch information.'
       setError(message)
@@ -133,11 +138,13 @@ export function BranchEntryContent({ onBack, onSaved, username, roleId = 'ambass
   }
 
   async function handleDelete(id) {
+    if (!window.confirm('Are you sure you want to delete this branch?')) return
     try {
       await deleteBranch(id)
       const updated = branches.filter((branch) => branch.id !== id)
       setBranches(updated)
       onSaved?.(updated)
+      notify('Branch deleted successfully.', 'success')
     } catch (deleteError) {
       setError(deleteError.message)
       notify(deleteError.message)
@@ -269,7 +276,7 @@ export function BranchEntryContent({ onBack, onSaved, username, roleId = 'ambass
                     <p className="truncate text-xs text-[#718096]">{branch.branchLocation || 'Location not provided'}</p>
                   </div>
                   <p className="text-xs text-[#52657d]"><span className="font-bold text-[#102d54]">{branch.workingComputers}</span> working computers</p>
-                  {(roleId === 'service-desk-manager' || branch.createdBy === username) && <div className="flex gap-4">
+                  {(roleId === 'service-desk-manager' || branch.createdBy === username || (roleId === 'ambassador' && branch.ambassadorName === ambassadorName)) && <div className="flex gap-4">
                     <button type="button" onClick={() => editBranch(branch)} className="text-sm font-bold text-[#1d5b9e] hover:underline">Edit</button>
                     <button type="button" onClick={() => handleDelete(branch.id)} className="text-sm font-bold text-[#c2413b] hover:underline">Delete</button>
                   </div>}

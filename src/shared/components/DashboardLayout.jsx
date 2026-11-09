@@ -52,7 +52,7 @@ function SidebarLink({ href, label, icon, active = false }) {
   return <a href={href} onClick={() => setIsLoading(true)} className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition ${active ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}><span className={active ? 'text-white' : 'text-[#52657d]'}>{icon}</span>{label}{isLoading && <span className="ml-auto h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-label="Loading" />}</a>
 }
 
-export function DashboardLayout({ roleId, username, navAction, dashboardActive, children }) {
+export function DashboardLayout({ roleId, username, navAction, dashboardActive, children, branchName }) {
   const role = roles[roleId]
   const isDashboardPage = dashboardActive ?? window.location.pathname === role.route
   const [toast, setToast] = useState(null)
@@ -91,7 +91,7 @@ export function DashboardLayout({ roleId, username, navAction, dashboardActive, 
             <div className="hidden items-center gap-3 text-sm font-bold text-white lg:flex"><SectionIcon /><span>{role.label}</span></div>
           <div className="flex items-center gap-3 sm:gap-5">
             <div className="hidden text-right sm:block">
-              <p className="text-sm font-bold text-white">{username}</p>
+              <p className="text-sm font-bold text-white">{roleId === 'branch-manager' && branchName ? branchName : username}</p>
               <p className="text-xs text-[#c8e3ee]">{role.label}</p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0b789d] text-sm font-bold text-white">
