@@ -29,6 +29,9 @@ function fromApiRow(row) {
     computerJob: row.computer_job || '',
     operatingSystem: row.operating_system || '',
     status: row.status || '',
+    networkAgent: row.network_agent || '',
+    endpoint: row.endpoint || row.endpoint_protection || '',
+    kasperskyStatus: row.kaspersky_status || '',
   }
 }
 
@@ -48,6 +51,9 @@ export async function createWorkbookRow(row) {
       computer_job: row.computerJob,
       operating_system: row.operatingSystem,
       status: row.status,
+      network_agent: row.networkAgent || null,
+      endpoint: row.endpoint || null,
+      kaspersky_status: row.kasperskyStatus || null,
     }),
   })
   return fromApiRow(workbookRow)
@@ -63,6 +69,9 @@ export async function updateWorkbookRow(id, row) {
       computer_job: row.computerJob,
       operating_system: row.operatingSystem,
       status: row.status,
+      network_agent: row.networkAgent || null,
+      endpoint: row.endpoint || null,
+      kaspersky_status: row.kasperskyStatus || null,
     }),
   })
   return fromApiRow(workbookRow)

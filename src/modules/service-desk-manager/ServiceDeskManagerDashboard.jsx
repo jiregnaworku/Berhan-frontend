@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react'
-import { DashboardLayout } from '../../shared/components/DashboardLayout.jsx'
+import {
+  DashboardLayout,
+  SidebarButton,
+  UsersIcon,
+  BranchIcon,
+  ComputerIcon,
+  DocumentIcon,
+  PreventiveIcon,
+  SettingsIcon,
+} from '../../shared/components/DashboardLayout.jsx'
 import BranchDirectory from '../../shared/components/BranchDirectory.jsx'
 import { BranchEntryContent } from '../ambassador/branchentry.jsx'
 import { ComputerWorkbookContent } from '../ambassador/computerWorkbook.jsx'
-import { KasperskyContent } from '../ambassador/kaspersky.jsx'
 import { fetchBranches } from '../ambassador/branchStore.js'
 import { CreateUser } from './createuser.jsx'
 import { fetchUsers } from './userStore.js'
@@ -29,14 +37,49 @@ function ServiceDeskManagerDashboard({ username }) {
   }, [])
 
   const navAction = (
-    <div className="flex flex-col items-stretch gap-1">
-      <button type="button" onClick={() => setActiveView('create-user')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'create-user' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>User Management</button>
-      <button type="button" onClick={() => setActiveView('manage-branches')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'manage-branches' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Branch Management</button>
-      <button type="button" onClick={() => setActiveView('computers')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'computers' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Computer Management</button>
-      <button type="button" onClick={() => setActiveView('kaspersky')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'kaspersky' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Kaspersky Status</button>
-      <button type="button" onClick={() => setActiveView('it-related-info')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'it-related-info' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>IT Related Info</button>
-      <button type="button" onClick={() => setActiveView('preventive-operations')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'preventive-operations' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Preventive Operations</button>
-      <button type="button" onClick={() => setActiveView('settings')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'settings' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Settings</button>
+    <div className="flex flex-col items-stretch gap-1.5">
+      <SidebarButton
+        active={activeView === 'create-user'}
+        onClick={() => setActiveView('create-user')}
+        icon={<UsersIcon />}
+      >
+        User Management
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'manage-branches'}
+        onClick={() => setActiveView('manage-branches')}
+        icon={<BranchIcon />}
+      >
+        Branch Management
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'computers'}
+        onClick={() => setActiveView('computers')}
+        icon={<ComputerIcon />}
+      >
+        Computer Management
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'it-related-info'}
+        onClick={() => setActiveView('it-related-info')}
+        icon={<DocumentIcon />}
+      >
+        IT Related Info
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'preventive-operations'}
+        onClick={() => setActiveView('preventive-operations')}
+        icon={<PreventiveIcon />}
+      >
+        Preventive Operations
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'settings'}
+        onClick={() => setActiveView('settings')}
+        icon={<SettingsIcon />}
+      >
+        Settings
+      </SidebarButton>
     </div>
   )
 
@@ -50,8 +93,6 @@ function ServiceDeskManagerDashboard({ username }) {
     <DashboardLayout roleId="service-desk-manager" username={username} navAction={navAction} dashboardActive={activeView === 'overview'}>
       {activeView === 'create-user' ? <CreateUser onCreated={handleCreated} username={username} /> : activeView === 'computers' ? (
         <ComputerWorkbookContent username={username} roleId="service-desk-manager" onBack={() => setActiveView('overview')} />
-      ) : activeView === 'kaspersky' ? (
-        <KasperskyContent username={username} roleId="service-desk-manager" />
       ) : activeView === 'manage-branches' ? (
         <BranchEntryContent username={username} roleId="service-desk-manager" onBack={() => setActiveView('overview')} />
       ) : activeView === 'settings' ? (

@@ -1,26 +1,33 @@
 import { useEffect, useState } from 'react'
-import { DashboardLayout } from '../../shared/components/DashboardLayout.jsx'
+import {
+  DashboardLayout,
+  SidebarButton,
+  BranchIcon,
+  NetworkIcon,
+  ComputerIcon,
+  DocumentIcon,
+  SettingsIcon,
+} from '../../shared/components/DashboardLayout.jsx'
 import BranchDirectory from '../../shared/components/BranchDirectory.jsx'
 import { BranchEntryContent } from './branchentry.jsx'
 import { NetworkContent } from './network.jsx'
 import { ComputerWorkbookContent } from './computerWorkbook.jsx'
-import { KasperskyContent } from './kaspersky.jsx'
 import SettingsContent from '../../shared/components/SettingsContent.jsx'
 import ItRelatedInfoContent from '../../shared/components/ItRelatedInfoContent.jsx'
 
-function AmbassadorNavButton({ view, activeView, isSwitching, onClick, children }) {
-  return (
-    <button type="button" onClick={() => onClick(view)} disabled={isSwitching} className={`flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === view ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'} disabled:cursor-wait disabled:opacity-70`}>
-      {children}
-      {isSwitching && activeView === view && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-label="Loading" />}
-    </button>
-  )
+function getInitialView() {
+  const p = window.location.pathname
+  if (p.endsWith('/settings')) return 'settings'
+  if (p.endsWith('/network')) return 'network'
+  if (p.endsWith('/computer-workbook')) return 'computer-workbook'
+  if (p.endsWith('/branches') || p.endsWith('/add-branch')) return 'add-branch'
+  return 'branches'
 }
 
 function AmbassadorDashboard({ username }) {
-  const [activeView, setActiveView] = useState(window.location.pathname.endsWith('/settings') ? 'settings' : 'branches')
+  const [activeView, setActiveView] = useState(getInitialView)
   const [isSwitching, setIsSwitching] = useState(false)
-  const [error, setError] = useState('')
+  const [error] = useState('')
 
   function showView(view) {
     setIsSwitching(true)
@@ -35,14 +42,47 @@ function AmbassadorDashboard({ username }) {
   }, [activeView, isSwitching])
 
   const navAction = (
-    <div className="flex flex-col items-stretch gap-1">
-       <AmbassadorNavButton view="add-branch" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Branch Management</AmbassadorNavButton>
-      <AmbassadorNavButton view="network" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Network Management</AmbassadorNavButton>
-    
-      <AmbassadorNavButton view="computer-workbook" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Computer Management</AmbassadorNavButton>
-      <AmbassadorNavButton view="kaspersky" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Kaspersky Status</AmbassadorNavButton>
-      <AmbassadorNavButton view="it-related-info" activeView={activeView} isSwitching={isSwitching} onClick={showView}>IT Related Info</AmbassadorNavButton>
-      <AmbassadorNavButton view="settings" activeView={activeView} isSwitching={isSwitching} onClick={showView}>Settings</AmbassadorNavButton>
+    <div className="flex flex-col items-stretch gap-1.5">
+      <SidebarButton
+        active={activeView === 'add-branch'}
+        isLoading={isSwitching && activeView === 'add-branch'}
+        onClick={() => showView('add-branch')}
+        icon={<BranchIcon />}
+      >
+        Branch Management
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'network'}
+        isLoading={isSwitching && activeView === 'network'}
+        onClick={() => showView('network')}
+        icon={<NetworkIcon />}
+      >
+        Network Management
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'computer-workbook'}
+        isLoading={isSwitching && activeView === 'computer-workbook'}
+        onClick={() => showView('computer-workbook')}
+        icon={<ComputerIcon />}
+      >
+        Computer Management
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'it-related-info'}
+        isLoading={isSwitching && activeView === 'it-related-info'}
+        onClick={() => showView('it-related-info')}
+        icon={<DocumentIcon />}
+      >
+        IT Related Info
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'settings'}
+        isLoading={isSwitching && activeView === 'settings'}
+        onClick={() => showView('settings')}
+        icon={<SettingsIcon />}
+      >
+        Settings
+      </SidebarButton>
     </div>
   )
 
@@ -54,8 +94,6 @@ function AmbassadorDashboard({ username }) {
         <BranchEntryContent onBack={() => showView('branches')} username={username} />
       ) : activeView === 'computer-workbook' ? (
         <ComputerWorkbookContent onBack={() => showView('branches')} username={username} />
-      ) : activeView === 'kaspersky' ? (
-        <KasperskyContent username={username} />
       ) : activeView === 'settings' ? (
         <SettingsContent username={username} />
       ) : activeView === 'it-related-info' ? (

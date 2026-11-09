@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { DashboardLayout } from '../../shared/components/DashboardLayout.jsx'
+import {
+  DashboardLayout,
+  SidebarButton,
+  BranchIcon,
+  DocumentIcon,
+  SettingsIcon,
+} from '../../shared/components/DashboardLayout.jsx'
 import BranchManagerDirectory from '../../shared/components/BranchManagerDirectory.jsx'
 import { roles } from '../../config/roles.js'
 import ItRelatedInfoContent from '../../shared/components/ItRelatedInfoContent.jsx'
@@ -13,10 +19,28 @@ function BranchManagerDashboard({ username }) {
   const [activeView, setActiveView] = useState('overview')
   const [branchName, setBranchName] = useState('')
   const navAction = (
-    <div className="flex flex-col items-stretch gap-1">
-      <button type="button" onClick={() => setActiveView('our-branch')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'our-branch' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Our Branch Info</button>
-      <button type="button" onClick={() => setActiveView('it-related-info')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'it-related-info' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>IT Related Info</button>
-      <button type="button" onClick={() => setActiveView('settings')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'settings' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Settings</button>
+    <div className="flex flex-col items-stretch gap-1.5">
+      <SidebarButton
+        active={activeView === 'our-branch'}
+        onClick={() => setActiveView('our-branch')}
+        icon={<BranchIcon />}
+      >
+        Our Branch Info
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'it-related-info'}
+        onClick={() => setActiveView('it-related-info')}
+        icon={<DocumentIcon />}
+      >
+        IT Related Info
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'settings'}
+        onClick={() => setActiveView('settings')}
+        icon={<SettingsIcon />}
+      >
+        Settings
+      </SidebarButton>
     </div>
   )
 

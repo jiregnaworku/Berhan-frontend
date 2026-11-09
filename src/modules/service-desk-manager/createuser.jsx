@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createUser, deleteUser, fetchAmbassadors, fetchUsers, updateUser } from './userStore.js'
+import { createUser, deleteUser, fetchUsers, updateUser } from './userStore.js'
 
 const emptyUser = {
   first_name: '',
@@ -47,15 +47,9 @@ export function CreateUser({ onCreated, username }) {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
-  const [ambassadors, setAmbassadors] = useState([])
-  const [isLoadingAmbassadors, setIsLoadingAmbassadors] = useState(true)
 
   useEffect(() => {
     fetchUsers().then(setUsers).finally(() => setIsLoadingUsers(false))
-  }, [])
-
-  useEffect(() => {
-    fetchAmbassadors().then(setAmbassadors).finally(() => setIsLoadingAmbassadors(false))
   }, [])
 
   function handleChange(event) {

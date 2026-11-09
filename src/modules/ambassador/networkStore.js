@@ -50,11 +50,22 @@ export async function fetchNetworkRegistrations(month = '') {
 }
 
 export async function createNetworkRegistration(registration) {
-  const { registration: savedRegistration } = await request('/network-registrations', {
+  const payload = toApiRegistration(registration)
+  if (Array.isArray(registration.branchNames) && registration.branchNames.length > 0) {
+    payload.branch_names = registration.branchNames
+  }
+  const result = await request('/network-registrations', {
     method: 'POST',
-    body: JSON.stringify(toApiRegistration(registration)),
+    body: JSON.stringify(payload),
   })
-  return fromApiRegistration(savedRegistration)
+  const first = fromApiRegistration(result.registration)
+  const all = Array.isArray(result.registrations)
+    ? result.registrations.map(fromApiRegistration)
+    : [first]
+  return {
+    registration: first,
+    registrations: all,
+  }
 }
 
 export async function downloadNetworkReport(month, ambassadorName) {

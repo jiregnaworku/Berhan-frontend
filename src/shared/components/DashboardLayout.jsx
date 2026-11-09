@@ -22,7 +22,7 @@ function ToastMessage({ toast, onDismiss }) {
   )
 }
 
-function ArrowIcon() {
+export function ArrowIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-2">
       <path d="M9 5l7 7-7 7" />
@@ -30,26 +30,169 @@ function ArrowIcon() {
   )
 }
 
-function LogoutIcon() {
+export function LogoutIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-2">
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-2">
       <path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M14 16l4-4-4-4M18 12H9" />
     </svg>
   )
 }
 
-function DashboardIcon() {
-  return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-2"><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><rect x="14" y="14" width="6" height="6" rx="1" /></svg>
+export function DashboardIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`${className} fill-none stroke-current stroke-2`}>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  )
+}
+
+export function UsersIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`${className} fill-none stroke-current stroke-2`}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  )
+}
+
+export function BranchIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`${className} fill-none stroke-current stroke-2`}>
+      <path d="M3 21h18M3 10h18M5 10v11M9 10v11M15 10v11M19 10v11M12 2L2 7h20L12 2z" />
+    </svg>
+  )
+}
+
+export function NetworkIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`${className} fill-none stroke-current stroke-2`}>
+      <rect x="2" y="2" width="6" height="6" rx="1.5" />
+      <rect x="16" y="2" width="6" height="6" rx="1.5" />
+      <rect x="9" y="16" width="6" height="6" rx="1.5" />
+      <path d="M5 8v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8M12 13v3" />
+    </svg>
+  )
+}
+
+export function ComputerIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`${className} fill-none stroke-current stroke-2`}>
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <path d="M8 21h8M12 17v4" />
+    </svg>
+  )
+}
+
+export function ShieldIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`${className} fill-none stroke-current stroke-2`}>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  )
+}
+
+export function DocumentIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`${className} fill-none stroke-current stroke-2`}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  )
+}
+
+export function PreventiveIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`${className} fill-none stroke-current stroke-2`}>
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+    </svg>
+  )
+}
+
+export function SettingsIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`${className} fill-none stroke-current stroke-2`}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  )
 }
 
 function SectionIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-2"><path d="M4 6h16M4 12h16M4 18h16" /><circle cx="7" cy="6" r="1" /><circle cx="7" cy="12" r="1" /><circle cx="7" cy="18" r="1" /></svg>
 }
 
-function SidebarLink({ href, label, icon, active = false }) {
+export function SidebarButton({ active = false, onClick, icon, children, isLoading = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={isLoading}
+      className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold transition-all duration-150 ${
+        active
+          ? 'bg-[#F9A804] text-[#00246B] shadow-md font-bold'
+          : 'text-white/85 hover:bg-white/10 hover:text-white'
+      } disabled:cursor-wait disabled:opacity-70`}
+    >
+      {icon && (
+        <span
+          className={`shrink-0 transition-colors duration-150 ${
+            active ? 'text-[#00246B]' : 'text-white/70 group-hover:text-[#F9A804]'
+          }`}
+        >
+          {icon}
+        </span>
+      )}
+      <span className="truncate flex-1">{children}</span>
+      {isLoading && (
+        <span
+          className="ml-auto h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+          aria-label="Loading"
+        />
+      )}
+    </button>
+  )
+}
+
+export function SidebarLink({ href, label, icon, active = false }) {
   const [isLoading, setIsLoading] = useState(false)
 
-  return <a href={href} onClick={() => setIsLoading(true)} className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition ${active ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}><span className={active ? 'text-white' : 'text-[#52657d]'}>{icon}</span>{label}{isLoading && <span className="ml-auto h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-label="Loading" />}</a>
+  return (
+    <a
+      href={href}
+      onClick={() => setIsLoading(true)}
+      className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-150 ${
+        active
+          ? 'bg-[#F9A804] text-[#00246B] shadow-md font-bold'
+          : 'text-white/85 hover:bg-white/10 hover:text-white'
+      }`}
+    >
+      {icon && (
+        <span
+          className={`shrink-0 transition-colors duration-150 ${
+            active ? 'text-[#00246B]' : 'text-white/70 group-hover:text-[#F9A804]'
+          }`}
+        >
+          {icon}
+        </span>
+      )}
+      <span className="truncate flex-1">{label}</span>
+      {isLoading && (
+        <span
+          className="ml-auto h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+          aria-label="Loading"
+        />
+      )}
+    </a>
+  )
 }
 
 export function DashboardLayout({ roleId, username, navAction, dashboardActive, children, branchName }) {
@@ -71,51 +214,77 @@ export function DashboardLayout({ roleId, username, navAction, dashboardActive, 
   return (
     <DashboardToastContext.Provider value={{ notify }}>
       <main className="min-h-screen bg-[#eef4f8] text-[#172b4d] lg:flex lg:h-screen lg:overflow-hidden">
-      {toast && <div className="pointer-events-none fixed inset-x-4 top-4 z-[100] flex justify-end sm:left-auto sm:w-auto"><ToastMessage key={toast.id} toast={toast} onDismiss={() => setToast(null)} /></div>}
-      <aside className="hidden w-60 shrink-0 border-r border-[#d7e1e8] bg-[#f5f8fa] lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
-        <div className="flex h-[5.1rem] items-center border-b border-[#d7e1e8] px-5">
-          <a href={role.route} className="flex items-center"><img src="/images/berhan.png" alt="Berhan Bank" className="h-11 w-auto object-contain" /></a>
-        </div>
-        <nav className="flex flex-1 flex-col gap-1 px-2 py-5" aria-label="Main navigation">
-          <SidebarLink href={role.route} label="Dashboard" icon={<DashboardIcon />} active={isDashboardPage} />
-          {navAction}
-        </nav>
-        <div className="border-t border-[#d7e1e8] p-3">
-          <button type="button" onClick={handleLogout} disabled={isSigningOut} className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-[#ef1f28] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"><LogoutIcon />{isSigningOut ? 'Signing out...' : 'Sign out'}</button>
-        </div>
-      </aside>
-      <div className="min-w-0 flex-1">
-        <header className="border-b border-[#075b78] bg-[#075b78]">
-          <div className="mx-auto flex min-h-[5.1rem] max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-10">
-            <a href={role.route} className="flex items-center lg:hidden"><img src="/images/berhan.png" alt="Berhan Bank" className="h-10 w-auto object-contain" /></a>
-            <div className="hidden items-center gap-3 text-sm font-bold text-white lg:flex"><SectionIcon /><span>{role.label}</span></div>
-          <div className="flex items-center gap-3 sm:gap-5">
-            <div className="hidden text-right sm:block">
-              <p className="text-sm font-bold text-white">{roleId === 'branch-manager' && branchName ? branchName : username}</p>
-              <p className="text-xs text-[#c8e3ee]">{role.label}</p>
+        {toast && (
+          <div className="pointer-events-none fixed inset-x-4 top-4 z-[100] flex justify-end sm:left-auto sm:w-auto">
+            <ToastMessage key={toast.id} toast={toast} onDismiss={() => setToast(null)} />
+          </div>
+        )}
+        <aside className="hidden w-64 shrink-0 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col bg-[#003498] shadow-2xl">
+          <div className="flex h-[5.1rem] items-center border-b border-white/10 px-5">
+            <a href={role.route} className="flex items-center bg-[#F9A804] px-3 py-1.5 rounded-xl shadow-sm transition hover:brightness-105">
+              <img src="/images/berhan.png" alt="Berhan Bank" className="h-9 w-auto object-contain" />
+            </a>
+          </div>
+          <nav className="flex flex-1 flex-col gap-1.5 px-3 py-4 overflow-y-auto" aria-label="Main navigation">
+            <SidebarLink href={role.route} label="Dashboard" icon={<DashboardIcon />} active={isDashboardPage} />
+            {navAction}
+          </nav>
+          <div className="border-t border-white/10 p-3">
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isSigningOut}
+              className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white/80 transition-all duration-150 hover:text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <span className="text-white/70 group-hover:text-[#F9A804] transition-colors"><LogoutIcon /></span>
+              <span>{isSigningOut ? 'Signing out...' : 'Sign out'}</span>
+            </button>
+          </div>
+        </aside>
+        <div className="min-w-0 flex-1">
+          <header className="border-b border-[#003498] bg-[#F9A804]">
+            <div className="mx-auto flex min-h-[5.1rem] max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-10">
+              <a href={role.route} className="flex items-center lg:hidden bg-white/20 p-1.5 rounded-lg">
+                <img src="/images/berhan.png" alt="Berhan Bank" className="h-9 w-auto object-contain" />
+              </a>
+              <div className="hidden items-center gap-3 text-sm font-bold text-[#172b4d] lg:flex">
+                <SectionIcon />
+                <span>{role.label}</span>
+              </div>
+              <div className="flex items-center gap-3 sm:gap-5">
+                <div className="hidden text-right sm:block">
+                  <p className="text-sm font-bold text-[#172b4d]">{roleId === 'branch-manager' && branchName ? branchName : username}</p>
+                  <p className="text-xs text-[#172b4d]/80">{role.label}</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#003498] text-sm font-bold text-[#F9A804] shadow-sm">
+                  {username.charAt(0).toUpperCase()}
+                </div>
+              </div>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0b789d] text-sm font-bold text-white">
-              {username.charAt(0).toUpperCase()}
-            </div>
+          </header>
+          <div className="border-b border-white/10 bg-[#003498] px-4 py-3 lg:hidden">
+            <nav className="flex flex-wrap gap-2" aria-label="Main navigation">
+              <SidebarLink href={role.route} label="Dashboard" icon={<DashboardIcon />} active={isDashboardPage} />
+              {navAction}
+            </nav>
+          </div>
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:h-[calc(100vh-5.1rem)] lg:overflow-y-auto lg:px-10">
+            {children}
           </div>
         </div>
-        </header>
-        <div className="border-b border-[#d7e1e8] bg-[#f5f8fa] px-4 py-3 lg:hidden">
-          <nav className="flex flex-wrap gap-2" aria-label="Main navigation"><SidebarLink href={role.route} label="Dashboard" icon={<DashboardIcon />} active={isDashboardPage} />{navAction}</nav>
-        </div>
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:h-[calc(100vh-5.1rem)] lg:overflow-y-auto lg:px-10">
-          {children}
-        </div>
-      </div>
-        </main>
-      </DashboardToastContext.Provider>
+      </main>
+    </DashboardToastContext.Provider>
   )
 }
 
 export function DashboardContent({ roleId, username }) {
   const role = roles[roleId]
   const [activeView, setActiveView] = useState(window.location.pathname.endsWith('/settings') ? 'settings' : 'overview')
-  const navAction = <button type="button" onClick={() => setActiveView('settings')} className={`w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition ${activeView === 'settings' ? 'bg-[#0645b8] text-white' : 'text-[#233047] hover:bg-white hover:text-[#0645b8]'}`}>Settings</button>
+  const navAction = (
+    <SidebarButton active={activeView === 'settings'} onClick={() => setActiveView('settings')} icon={<SettingsIcon />}>
+      Settings
+    </SidebarButton>
+  )
 
   return (
     <DashboardLayout roleId={roleId} username={username} navAction={navAction} dashboardActive={activeView === 'overview'}>
