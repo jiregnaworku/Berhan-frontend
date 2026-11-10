@@ -35,6 +35,7 @@ function fromApiBranch(branch) {
     ...Object.fromEntries(
       Object.entries(fieldMap).map(([frontendName, apiName]) => [frontendName, branch[apiName] ?? '']),
     ),
+    managerCanEdit: Boolean(branch.manager_can_edit),
   }
 }
 
@@ -106,4 +107,15 @@ export async function updateBranch(id, branch) {
 export async function deleteBranch(id) {
   await request(`/branches/${id}`, { method: 'DELETE' })
   clearBranchCache()
+}
+
+// Lets the ambassador turn on/off the branch manager's permission to update
+// the Net Agent and Endpoint details of this branch's computers.
+export async function setBranchManagerEdit(id, enabled) {
+  const { branch: savedBranch } = await request(`/branches/${id}/manager-edit`, {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
+  })
+  clearBranchCache()
+  return fromApiBranch(savedBranch)
 }

@@ -77,6 +77,18 @@ export async function updateWorkbookRow(id, row) {
   return fromApiRow(workbookRow)
 }
 
+// Branch manager only: updates just the Net Agent and Endpoint values.
+export async function updateKasperskyDetails(id, { networkAgent, endpoint }) {
+  const { workbookRow } = await request(`/computer-workbook/${id}/kaspersky`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      network_agent: networkAgent || null,
+      endpoint: endpoint || null,
+    }),
+  })
+  return fromApiRow(workbookRow)
+}
+
 export async function deleteWorkbookRow(id) {
   await request(`/computer-workbook/${id}`, { method: 'DELETE' })
 }

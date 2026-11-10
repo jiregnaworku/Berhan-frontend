@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { createUser, deleteUser, fetchUsers, updateUser } from './userStore.js'
 
 const emptyUser = {
@@ -123,15 +123,17 @@ export function CreateUser({ onCreated, username }) {
     setIsFormOpen(true)
   }
 
+  // Branch managers are not listed in the table.
   const managedUsers = useMemo(
-    () => users.filter((user) => user.username !== username),
+    () => users.filter((user) => user.username !== username && user.role !== 'branch-manager'),
     [users, username],
   )
 
-  const filteredUsers = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return managedUsers.filter((user) => {
-      const searchableText = [
+  // Build the lowercase searchable text once per user list (not on every keystroke).
+  const searchIndex = useMemo(
+    () => managedUsers.map((user) => ({
+      user,
+      text: [
         user.name,
         user.first_name,
         user.last_name,
@@ -141,13 +143,22 @@ export function CreateUser({ onCreated, username }) {
         user.branch?.branch_name,
         roleLabel(user.role),
       ]
-        .map((value) => String(value ?? '').toLowerCase())
+        .map((value) => String(value ?? ''))
         .join(' ')
-      const matchesSearch = !query || searchableText.includes(query)
-      const matchesRole = roleFilter === 'all' || user.role === roleFilter
-      return matchesSearch && matchesRole
-    })
-  }, [managedUsers, roleFilter, search])
+        .toLowerCase(),
+    })),
+    [managedUsers],
+  )
+
+  // Keeps typing responsive: the input updates instantly, filtering runs at lower priority.
+  const deferredSearch = useDeferredValue(search)
+
+  const filteredUsers = useMemo(() => {
+    const query = deferredSearch.trim().toLowerCase()
+    return searchIndex
+      .filter(({ user, text }) => (roleFilter === 'all' || user.role === roleFilter) && (!query || text.includes(query)))
+      .map(({ user }) => user)
+  }, [searchIndex, roleFilter, deferredSearch])
 
   return (
     <section className="mx-auto max-w-5xl">

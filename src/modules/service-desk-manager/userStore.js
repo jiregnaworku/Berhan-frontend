@@ -9,6 +9,7 @@ async function request(path, options = {}) {
     const body = await response.json().catch(() => ({}))
     const error = new Error(body.message || 'The user request failed.')
     error.errors = body.errors || {}
+    error.status = response.status
     throw error
   }
 

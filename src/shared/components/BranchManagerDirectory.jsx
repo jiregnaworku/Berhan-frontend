@@ -34,18 +34,20 @@ export default function BranchManagerDirectory() {
         <p className="p-4 text-sm text-[#718096]">No branches have been added yet.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[52rem] text-left text-sm">
+          <table className="w-full min-w-[60rem] text-left text-sm">
             <thead className="border-b border-[#dfe8ee] bg-[#f4f8fa] text-[10px] uppercase tracking-wide text-[#52657d]">
-              <tr><th className="px-4 py-3 font-bold">Branch name</th><th className="px-4 py-3 font-bold">Ambassador</th><th className="px-4 py-3 font-bold">Ambassador phone</th><th className="px-4 py-3 font-bold">Manager</th><th className="px-4 py-3 font-bold">Manager phone</th></tr>
+              <tr><th className="px-4 py-3 font-bold">Branch name</th><th className="px-4 py-3 font-bold">Branch code</th><th className="px-4 py-3 font-bold">Location</th><th className="px-4 py-3 font-bold">Manager</th><th className="px-4 py-3 font-bold">Manager phone</th><th className="px-4 py-3 font-bold">Assistant</th><th className="px-4 py-3 font-bold">Assistant phone</th></tr>
             </thead>
             <tbody className="divide-y divide-[#edf1f5]">
               {branches.map((branch) => (
                 <tr key={branch.id} className="text-[#52657d]">
                   <td className="px-4 py-3 font-semibold text-[#102d54]">{contact(branch.branchName)}</td>
-                  <td className="px-4 py-3">{contact(branch.ambassadorName)}</td>
-                  <td className="px-4 py-3">{contact(branch.ambassadorPhone)}</td>
+                  <td className="px-4 py-3">{contact(branch.branchCode)}</td>
+                  <td className="px-4 py-3">{contact(branch.branchLocation)}</td>
                   <td className="px-4 py-3">{contact(branch.managerName)}</td>
                   <td className="px-4 py-3">{contact(branch.managerPhone)}</td>
+                  <td className="px-4 py-3">{contact(branch.assistantName)}</td>
+                  <td className="px-4 py-3">{contact(branch.assistantMobile)}</td>
                 </tr>
               ))}
             </tbody>

@@ -25,7 +25,7 @@ function BranchManagerDashboard({ username }) {
         onClick={() => setActiveView('our-branch')}
         icon={<BranchIcon />}
       >
-        Our Branch Info
+        My Branch Info
       </SidebarButton>
       <SidebarButton
         active={activeView === 'it-related-info'}
@@ -84,7 +84,6 @@ function BranchManagerOverview({ username }) {
     <>
       <div className="mb-9">
         <p className="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-[#e09f1f]">Branch manager workspace</p>
-        <h1 className="text-3xl font-bold text-[#102d54] sm:text-4xl">Branch overview</h1>
         <p className="mt-2 text-[#718096]">{role.greeting}</p>
       </div>
       {error && <p className="mb-5 rounded-lg border border-[#f2c5c2] bg-[#fff7f6] p-3 text-sm text-[#c2413b]" role="alert">{error}</p>}

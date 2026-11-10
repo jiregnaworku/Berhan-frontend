@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useDashboardToast } from '../../shared/components/dashboardToast.js'
-import { fetchBranches } from './branchStore.js'
+import { fetchBranches, setBranchManagerEdit } from './branchStore.js'
 import { fetchAmbassadors } from '../service-desk-manager/ambassadorStore.js'
 import {
   createWorkbookRow,
@@ -8,6 +8,7 @@ import {
   fetchWorkbookRows,
   updateWorkbookRow,
 } from './computerWorkbookStore.js'
+import ComputerReportButton from './ComputerReportButton.jsx'
 
 const emptyRow = {
   branchId: '',
@@ -71,6 +72,8 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
   const [filterAmbassador, setFilterAmbassador] = useState('')
   const [filterKaspersky, setFilterKaspersky] = useState('')
   const [ambassadors, setAmbassadors] = useState([])
+  const [permissionBranchId, setPermissionBranchId] = useState('')
+  const [isTogglingEdit, setIsTogglingEdit] = useState(false)
 
   useEffect(() => {
     Promise.all([fetchBranches(), fetchWorkbookRows(), fetchAmbassadors()])
@@ -152,6 +155,30 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
     setIsFormOpen(true)
   }
 
+  const selectedPermissionBranch = branches.find((branch) => String(branch.id) === String(permissionBranchId))
+  const isManagerEditOn = Boolean(selectedPermissionBranch?.managerCanEdit)
+
+  async function handleToggleManagerEdit() {
+    if (!selectedPermissionBranch) return
+    setIsTogglingEdit(true)
+    try {
+      const saved = await setBranchManagerEdit(selectedPermissionBranch.id, !selectedPermissionBranch.managerCanEdit)
+      setBranches((current) =>
+        current.map((branch) => (branch.id === saved.id ? { ...branch, managerCanEdit: saved.managerCanEdit } : branch)),
+      )
+      notify(
+        saved.managerCanEdit
+          ? 'Branch manager can now update the Net Agent and Endpoint of this branch.'
+          : 'Branch manager editing turned off for this branch.',
+        'success',
+      )
+    } catch (toggleError) {
+      notify(Object.values(toggleError.errors || {}).flat()[0] || toggleError.message)
+    } finally {
+      setIsTogglingEdit(false)
+    }
+  }
+
   const branchName = (branchId) =>
     branches.find((branch) => String(branch.id) === String(branchId))?.branchName || 'Unknown branch'
 
@@ -183,6 +210,7 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
           </p>
         </div>
         <div className="flex gap-3">
+          <ComputerReportButton rows={rows} branches={branches} />
           <button
             type="button"
             onClick={startNewComputer}
@@ -342,6 +370,46 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
           </form>
         </div>
       )}
+
+      {/* Branch manager editing switch */}
+      <section className="mb-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-[#e5ebf2] bg-white p-4 shadow-[0_8px_24px_rgba(16,45,84,0.05)]">
+        <div className="max-w-xl">
+          <h2 className="text-sm font-bold text-[#102d54]">Branch manager editing</h2>
+          <p className="mt-0.5 text-xs text-[#718096]">
+            Choose a branch and turn editing on so its branch manager can update only the Net Agent and Endpoint of its computers.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-56">
+            <WorkbookSelect
+              name="permissionBranch"
+              label="Branch"
+              value={permissionBranchId}
+              onChange={(event) => setPermissionBranchId(event.target.value)}
+            >
+              <option value="">Select branch</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.branchName}
+                </option>
+              ))}
+            </WorkbookSelect>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isManagerEditOn}
+            disabled={!selectedPermissionBranch || isTogglingEdit}
+            onClick={handleToggleManagerEdit}
+            className="flex min-h-9 items-center gap-2 rounded-xl border border-[#dce4ee] px-3 py-1.5 text-xs font-bold text-[#52657d] transition hover:border-[#003498] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${isManagerEditOn ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${isManagerEditOn ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </span>
+            {isTogglingEdit ? 'Saving...' : isManagerEditOn ? 'Editing on' : 'Editing off'}
+          </button>
+        </div>
+      </section>
 
       {/* Filter and Search Bar */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

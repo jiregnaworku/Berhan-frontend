@@ -18,6 +18,7 @@ import { fetchUsers } from './userStore.js'
 import SettingsContent from '../../shared/components/SettingsContent.jsx'
 import ItRelatedInfoContent from '../../shared/components/ItRelatedInfoContent.jsx'
 import PreventiveOperation from './priventive.jsx'
+import ItAwareness from './Itawareness.jsx'
 
 function ServiceDeskManagerDashboard({ username }) {
   const [activeView, setActiveView] = useState(window.location.pathname.endsWith('/settings') ? 'settings' : 'overview')
@@ -74,6 +75,13 @@ function ServiceDeskManagerDashboard({ username }) {
         Preventive Operations
       </SidebarButton>
       <SidebarButton
+        active={activeView === 'it-awareness'}
+        onClick={() => setActiveView('it-awareness')}
+        icon={<DocumentIcon />}
+      >
+        IT Awareness
+      </SidebarButton>
+      <SidebarButton
         active={activeView === 'settings'}
         onClick={() => setActiveView('settings')}
         icon={<SettingsIcon />}
@@ -101,6 +109,8 @@ function ServiceDeskManagerDashboard({ username }) {
         <ItRelatedInfoContent canManage />
       ) : activeView === 'preventive-operations' ? (
         <PreventiveOperation />
+      ) : activeView === 'it-awareness' ? (
+        <ItAwareness />
       ) : (
         <main>
           <div className="mb-8">
