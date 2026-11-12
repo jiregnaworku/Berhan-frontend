@@ -205,9 +205,6 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
             {isManager ? 'Service desk operations' : 'Ambassador workspace'}
           </p>
           <h1 className="text-2xl font-bold text-[#102d54]">{isManager ? 'Computer & Kaspersky Management' : 'My Computers & Kaspersky'}</h1>
-          <p className="mt-1 text-xs text-[#718096]">
-            Register and manage branch computer workstations, hardware specs, and Kaspersky antivirus compliance in one place.
-          </p>
         </div>
         <div className="flex gap-3">
           <ComputerReportButton rows={rows} branches={branches} />
@@ -374,10 +371,8 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
       {/* Branch manager editing switch */}
       <section className="mb-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-[#e5ebf2] bg-white p-4 shadow-[0_8px_24px_rgba(16,45,84,0.05)]">
         <div className="max-w-xl">
-          <h2 className="text-sm font-bold text-[#102d54]">Branch manager editing</h2>
-          <p className="mt-0.5 text-xs text-[#718096]">
-            Choose a branch and turn editing on so its branch manager can update only the Net Agent and Endpoint of its computers.
-          </p>
+          <h2 className="text-sm font-bold text-[#102d54]">Branch manager editing, chose a branch to allow them edit <keygen />aspersky</h2>
+          <p></p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-56">

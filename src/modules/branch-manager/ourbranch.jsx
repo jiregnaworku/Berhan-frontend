@@ -149,7 +149,6 @@ export function OurBranchContent() {
             <SectionCard title="Network details" subtitle="Branch devices and servers">
               <dl className="divide-y divide-[#edf1f5]">
                 <DetailRow label="Display TV IP" value={branch.displayTvIp} />
-                <DetailRow label="Kaspersky server IP" value={branch.kasperskyServerIp} />
               </dl>
             </SectionCard>
           </div>

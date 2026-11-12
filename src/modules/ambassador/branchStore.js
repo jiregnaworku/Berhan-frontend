@@ -5,6 +5,7 @@ const fieldMap = {
   branchLocation: 'branch_location',
   ambassadorName: 'ambassador_name',
   ambassadorPhone: 'ambassador_phone',
+  ambassadorUsername: 'ambassador_username',
   backupName: 'backup_name',
   backupPhone: 'backup_phone',
   backupUsername: 'backup_username',
@@ -79,6 +80,43 @@ export async function fetchBranches() {
     })
 
   return branchRequest
+}
+
+// Master list of branches for the dropdown (all of them, even ones already added).
+export async function fetchBranchDirectory() {
+  const { branches } = await request('/branch-directory')
+  return branches.map(({ code, name, branch_type }) => ({
+    code,
+    name,
+    type: branch_type,
+  }))
+}
+
+// Service desk manager: add a completely new branch to the master list.
+export async function createDirectoryBranch({ code, name, type }) {
+  const { branch } = await request('/branch-directory', {
+    method: 'POST',
+    body: JSON.stringify({ code, name, branch_type: type }),
+  })
+  return { code: branch.code, name: branch.name, type: branch.branch_type }
+}
+
+// Service desk manager: remove an unused branch from the master list.
+export async function deleteDirectoryBranch(code) {
+  await request(`/branch-directory/${encodeURIComponent(code)}`, { method: 'DELETE' })
+}
+// Service desk manager: edit a branch's name, code or type in the master list.
+// If the branch is already added, the updated branch is returned too.
+export async function updateDirectoryBranch(currentCode, { code, name, type }) {
+  const { entry, branch } = await request(`/branch-directory/${encodeURIComponent(currentCode)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ code, name, branch_type: type }),
+  })
+  clearBranchCache()
+  return {
+    entry: { code: entry.code, name: entry.name, type: entry.branch_type },
+    branch: branch ? fromApiBranch(branch) : null,
+  }
 }
 
 function clearBranchCache() {

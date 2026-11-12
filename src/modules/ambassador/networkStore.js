@@ -40,7 +40,7 @@ async function request(path, options = {}) {
     throw error
   }
 
-  return response.json()
+  return response.status === 204 ? null : response.json()
 }
 
 export async function fetchNetworkRegistrations(month = '') {
@@ -66,6 +66,20 @@ export async function createNetworkRegistration(registration) {
     registration: first,
     registrations: all,
   }
+}
+
+// Edit one outage report (only the fields you pass are sent).
+export async function updateNetworkRegistration(id, registration) {
+  const result = await request(`/network-registrations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(toApiRegistration(registration)),
+  })
+  return result?.registration ? fromApiRegistration(result.registration) : null
+}
+
+// Delete one outage report.
+export async function deleteNetworkRegistration(id) {
+  await request(`/network-registrations/${id}`, { method: 'DELETE' })
 }
 
 export async function downloadNetworkReport(month, ambassadorName) {
