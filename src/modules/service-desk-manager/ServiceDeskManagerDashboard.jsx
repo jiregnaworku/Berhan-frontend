@@ -8,6 +8,7 @@ import {
   DocumentIcon,
   PreventiveIcon,
   SettingsIcon,
+  ShieldIcon,
 } from '../../shared/components/DashboardLayout.jsx'
 import BranchDirectory from '../../shared/components/BranchDirectory.jsx'
 import { BranchEntryContent } from '../ambassador/branchentry.jsx'
@@ -17,6 +18,7 @@ import { CreateUser } from './createuser.jsx'
 import { fetchUsers } from './userStore.js'
 import SettingsContent from '../../shared/components/SettingsContent.jsx'
 import ItRelatedInfoContent from '../../shared/components/ItRelatedInfoContent.jsx'
+import { MtoStatusContent } from '../../shared/components/MtoStatus.jsx'
 import PreventiveOperation from './priventive.jsx'
 import ItAwareness from './Itawareness.jsx'
 
@@ -61,6 +63,13 @@ function ServiceDeskManagerDashboard({ username }) {
         Computer Management
       </SidebarButton>
       <SidebarButton
+        active={activeView === 'mto-status'}
+        onClick={() => setActiveView('mto-status')}
+        icon={<ShieldIcon />}
+      >
+        MTO Status
+      </SidebarButton>
+      <SidebarButton
         active={activeView === 'it-related-info'}
         onClick={() => setActiveView('it-related-info')}
         icon={<DocumentIcon />}
@@ -103,6 +112,8 @@ function ServiceDeskManagerDashboard({ username }) {
         <ComputerWorkbookContent username={username} roleId="service-desk-manager" onBack={() => setActiveView('overview')} />
       ) : activeView === 'manage-branches' ? (
         <BranchEntryContent username={username} roleId="service-desk-manager" onBack={() => setActiveView('overview')} />
+      ) : activeView === 'mto-status' ? (
+        <MtoStatusContent username={username} roleId="service-desk-manager" onBack={() => setActiveView('overview')} />
       ) : activeView === 'settings' ? (
         <SettingsContent username={username} />
       ) : activeView === 'it-related-info' ? (

@@ -5,10 +5,12 @@ import {
   BranchIcon,
   DocumentIcon,
   SettingsIcon,
+  ShieldIcon,
 } from '../../shared/components/DashboardLayout.jsx'
 import BranchManagerDirectory from '../../shared/components/BranchManagerDirectory.jsx'
 import { roles } from '../../config/roles.js'
 import ItRelatedInfoContent from '../../shared/components/ItRelatedInfoContent.jsx'
+import { MtoStatusContent } from '../../shared/components/MtoStatus.jsx'
 import { OurBranchContent } from './ourbranch.jsx'
 import SettingsContent from '../../shared/components/SettingsContent.jsx'
 import { fetchBranches } from '../ambassador/branchStore.js'
@@ -26,6 +28,13 @@ function BranchManagerDashboard({ username }) {
         icon={<BranchIcon />}
       >
         My Branch Info
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'mto-status'}
+        onClick={() => setActiveView('mto-status')}
+        icon={<ShieldIcon />}
+      >
+        MTO Status
       </SidebarButton>
       <SidebarButton
         active={activeView === 'it-related-info'}
@@ -55,7 +64,7 @@ function BranchManagerDashboard({ username }) {
 
   return (
     <DashboardLayout roleId="branch-manager" username={username} branchName={branchName} navAction={navAction} dashboardActive={activeView === 'overview'}>
-      {activeView === 'our-branch' ? <OurBranchContent /> : activeView === 'settings' ? <SettingsContent username={username} /> : activeView === 'it-related-info' ? <ItRelatedInfoContent /> : <BranchManagerOverview username={username} />}
+      {activeView === 'our-branch' ? <OurBranchContent /> : activeView === 'mto-status' ? <MtoStatusContent roleId="branch-manager" username={username} /> : activeView === 'settings' ? <SettingsContent username={username} /> : activeView === 'it-related-info' ? <ItRelatedInfoContent /> : <BranchManagerOverview username={username} />}
     </DashboardLayout>
   )
 }

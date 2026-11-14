@@ -7,11 +7,15 @@ import {
   ComputerIcon,
   DocumentIcon,
   SettingsIcon,
+  ShieldIcon,
+  UsersIcon,
 } from '../../shared/components/DashboardLayout.jsx'
 import BranchDirectory from '../../shared/components/BranchDirectory.jsx'
 import { BranchEntryContent } from './branchentry.jsx'
 import { NetworkContent } from './network.jsx'
 import { ComputerWorkbookContent } from './computerWorkbook.jsx'
+import { OthersComputerContent } from './Otherscomputer.jsx'
+import { MtoStatusContent } from '../../shared/components/MtoStatus.jsx'
 import SettingsContent from '../../shared/components/SettingsContent.jsx'
 import ItRelatedInfoContent from '../../shared/components/ItRelatedInfoContent.jsx'
 
@@ -20,6 +24,8 @@ function getInitialView() {
   if (p.endsWith('/settings')) return 'settings'
   if (p.endsWith('/network')) return 'network'
   if (p.endsWith('/computer-workbook')) return 'computer-workbook'
+  if (p.endsWith('/other-computers')) return 'other-computers'
+  if (p.endsWith('/mto-status')) return 'mto-status'
   if (p.endsWith('/branches') || p.endsWith('/add-branch')) return 'add-branch'
   return 'branches'
 }
@@ -27,12 +33,24 @@ function getInitialView() {
 function AmbassadorDashboard({ username }) {
   const [activeView, setActiveView] = useState(getInitialView)
   const [isSwitching, setIsSwitching] = useState(false)
+  const [focusBranchId, setFocusBranchId] = useState('')
   const [error] = useState('')
 
-  function showView(view) {
+  // branchId is only passed when jumping from a branch popup; sidebar clicks clear it
+  function showView(view, branchId = '') {
     setIsSwitching(true)
+    setFocusBranchId(branchId)
     setActiveView(view)
     window.history.pushState({}, '', view === 'branches' ? '/dashboard/ambassador' : `/dashboard/ambassador/${view}`)
+  }
+
+  // Called from the branch popup on the home page
+  function handleViewBranchComputers(branch) {
+    if (branch.createdBy === username) {
+      showView('computer-workbook')
+    } else {
+      showView('other-computers', String(branch.id))
+    }
   }
 
   useEffect(() => {
@@ -68,6 +86,22 @@ function AmbassadorDashboard({ username }) {
         Computer Management
       </SidebarButton>
       <SidebarButton
+        active={activeView === 'other-computers'}
+        isLoading={isSwitching && activeView === 'other-computers'}
+        onClick={() => showView('other-computers')}
+        icon={<UsersIcon />}
+      >
+        Other Computers
+      </SidebarButton>
+      <SidebarButton
+        active={activeView === 'mto-status'}
+        isLoading={isSwitching && activeView === 'mto-status'}
+        onClick={() => showView('mto-status')}
+        icon={<ShieldIcon />}
+      >
+        MTO Status
+      </SidebarButton>
+      <SidebarButton
         active={activeView === 'it-related-info'}
         isLoading={isSwitching && activeView === 'it-related-info'}
         onClick={() => showView('it-related-info')}
@@ -94,6 +128,14 @@ function AmbassadorDashboard({ username }) {
         <BranchEntryContent onBack={() => showView('branches')} username={username} />
       ) : activeView === 'computer-workbook' ? (
         <ComputerWorkbookContent onBack={() => showView('branches')} username={username} />
+      ) : activeView === 'other-computers' ? (
+        <OthersComputerContent
+          onBack={() => showView('branches')}
+          username={username}
+          initialBranchId={focusBranchId}
+        />
+      ) : activeView === 'mto-status' ? (
+        <MtoStatusContent roleId="ambassador" username={username} onBack={() => showView('branches')} />
       ) : activeView === 'settings' ? (
         <SettingsContent username={username} />
       ) : activeView === 'it-related-info' ? (
@@ -106,7 +148,7 @@ function AmbassadorDashboard({ username }) {
             <h1 className="text-3xl font-bold text-[#102d54] sm:text-4xl">My branches</h1>
             <p className="mt-2 text-[#718096]">Branches assigned to you are listed below.</p>
           </div>
-          <BranchDirectory title="All branches" />
+          <BranchDirectory title="All branches" onViewComputers={handleViewBranchComputers} />
         </>
       )}
     </DashboardLayout>

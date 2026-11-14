@@ -23,7 +23,11 @@ function fromApiRow(row) {
   return {
     id: row.id,
     branchId: row.branch_id,
+    branchName: row.branch_name || '',
+    branchCode: row.branch_code || '',
+    branchLocation: row.branch_location || '',
     ambassadorName: row.ambassador_name || '',
+    ambassadorUsername: row.ambassador_username || '',
     ipAddress: row.ip_address || '',
     computerName: row.computer_name || '',
     computerJob: row.computer_job || '',
@@ -37,6 +41,12 @@ function fromApiRow(row) {
 
 export async function fetchWorkbookRows() {
   const { workbookRows } = await request('/computer-workbook')
+  return workbookRows.map(fromApiRow)
+}
+
+// Read-only: every computer in the bank, for the "Other ambassadors' computers" page.
+export async function fetchAllWorkbookRows() {
+  const { workbookRows } = await request('/computer-workbook/all')
   return workbookRows.map(fromApiRow)
 }
 

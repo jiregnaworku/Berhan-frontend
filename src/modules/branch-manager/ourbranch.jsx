@@ -172,10 +172,6 @@ export function OurBranchContent() {
             </div>
             <div className="space-y-4">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#52657d]">Net Agent IP / Version</span>
-                <input value={kasperskyForm.networkAgent} onChange={(event) => setKasperskyForm((current) => ({ ...current, networkAgent: event.target.value }))} maxLength={60} className="min-h-10 w-full rounded-lg border border-[#dce4ee] bg-[#fbfcfe] px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#1d5b9e] focus:ring-[3px] focus:ring-[#1d5b9e]/[0.14]" />
-              </label>
-              <label className="block">
                 <span className="mb-1.5 block text-xs font-bold text-[#52657d]">Endpoint Protection IP / Version</span>
                 <input value={kasperskyForm.endpoint} onChange={(event) => setKasperskyForm((current) => ({ ...current, endpoint: event.target.value }))} maxLength={60} className="min-h-10 w-full rounded-lg border border-[#dce4ee] bg-[#fbfcfe] px-3 py-2 text-sm text-[#1f2937] outline-none focus:border-[#1d5b9e] focus:ring-[3px] focus:ring-[#1d5b9e]/[0.14]" />
               </label>

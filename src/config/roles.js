@@ -7,6 +7,8 @@ export const roles = {
     branchRoute: '/dashboard/ambassador/branches',
     networkRoute: '/dashboard/ambassador/network',
     computerRoute: '/dashboard/ambassador/computer-workbook',
+    otherComputersRoute: '/dashboard/ambassador/other-computers',
+    mtoRoute: '/dashboard/ambassador/mto-status',
     settingsRoute: '/dashboard/ambassador/settings',
     greeting: 'Your customer service overview',
     stats: [
@@ -25,6 +27,7 @@ export const roles = {
     label: 'Service Desk Manager',
     description: 'Coordinate service desk operations and resolve escalations.',
     route: '/dashboard/service-desk-manager',
+    mtoRoute: '/dashboard/service-desk-manager/mto-status',
     settingsRoute: '/dashboard/service-desk-manager/settings',
     greeting: 'Your service desk overview',
     stats: [
@@ -43,6 +46,7 @@ export const roles = {
     label: 'Branch Manager',
     description: 'Monitor branch performance and keep teams aligned.',
     route: '/dashboard/branch-manager',
+    mtoRoute: '/dashboard/branch-manager/mto-status',
     settingsRoute: '/dashboard/branch-manager/settings',
     greeting: 'Your branch performance overview',
     stats: [
@@ -66,6 +70,8 @@ export function getRoleByRoute(pathname) {
       || role.branchRoute === pathname
       || role.networkRoute === pathname
       || role.computerRoute === pathname
+      || role.otherComputersRoute === pathname
+      || role.mtoRoute === pathname
       || role.settingsRoute === pathname,
   )
 }
