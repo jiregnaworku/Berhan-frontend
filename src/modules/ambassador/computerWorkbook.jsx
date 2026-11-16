@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useDashboardToast } from '../../shared/components/dashboardToast.js'
 import { fetchBranches, setBranchManagerEdit } from './branchStore.js'
 import { fetchAmbassadors } from '../service-desk-manager/ambassadorStore.js'
 import {
+  COMPUTER_JOB_OPTIONS,
+  computerJobLabel,
   createWorkbookRow,
   deleteWorkbookRow,
   fetchWorkbookRows,
@@ -10,22 +12,30 @@ import {
 } from './computerWorkbookStore.js'
 import ComputerReportButton from './ComputerReportButton.jsx'
 
+const PAGE_SIZE = 30
+
 const emptyRow = {
   branchId: '',
   ipAddress: '',
   computerName: '',
+  computerModel: '',
   computerJob: '',
+  chequeScanner: 'No',
   operatingSystem: '',
   status: 'Active',
   networkAgent: '',
   endpoint: '',
   kasperskyStatus: 'Updated',
+  remark: '',
 }
 
-function WorkbookInput({ name, label, value, onChange, required = false, type = 'text', placeholder = '' }) {
+const fieldClass =
+  'min-h-10 w-full rounded-xl border border-[#e3e8ef] bg-white px-3 text-sm text-[#1f2937] outline-none transition placeholder:text-[#a0aec0] focus:border-[#003498] focus:ring-2 focus:ring-[#003498]/15'
+
+function WorkbookInput({ name, label, value, onChange, required = false, type = 'text', placeholder = '', maxLength }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#52657d]">{label}</span>
+      <span className="mb-1 block text-xs font-semibold text-[#52657d]">{label}</span>
       <input
         name={name}
         type={type}
@@ -33,7 +43,8 @@ function WorkbookInput({ name, label, value, onChange, required = false, type = 
         onChange={onChange}
         required={required}
         placeholder={placeholder}
-        className="min-h-9 w-full rounded-md border border-[#dce4ee] bg-[#fbfcfe] px-2.5 text-xs text-[#1f2937] outline-none transition focus:border-[#003498] focus:ring-2 focus:ring-[#003498]/20"
+        maxLength={maxLength}
+        className={fieldClass}
       />
     </label>
   )
@@ -42,17 +53,32 @@ function WorkbookInput({ name, label, value, onChange, required = false, type = 
 function WorkbookSelect({ name, label, value, onChange, children, required = false }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#52657d]">{label}</span>
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        required={required}
-        className="min-h-9 w-full rounded-md border border-[#dce4ee] bg-[#fbfcfe] px-2.5 text-xs text-[#1f2937] outline-none transition focus:border-[#003498] focus:ring-2 focus:ring-[#003498]/20"
-      >
+      <span className="mb-1 block text-xs font-semibold text-[#52657d]">{label}</span>
+      <select name={name} value={value} onChange={onChange} required={required} className={fieldClass}>
         {children}
       </select>
     </label>
+  )
+}
+
+function Tag({ children, tone = 'plain' }) {
+  const tones = {
+    plain: 'bg-[#f1f4f9] text-[#52657d]',
+    blue: 'bg-[#e8eefb] text-[#003498]',
+  }
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]}`}>
+      {children}
+    </span>
+  )
+}
+
+function Detail({ label, children }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[11px] text-[#8a98ab]">{label}</p>
+      <p className="truncate font-mono text-xs text-[#1f2937]">{children}</p>
+    </div>
   )
 }
 
@@ -74,6 +100,7 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
   const [ambassadors, setAmbassadors] = useState([])
   const [permissionBranchId, setPermissionBranchId] = useState('')
   const [isTogglingEdit, setIsTogglingEdit] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   useEffect(() => {
     Promise.all([fetchBranches(), fetchWorkbookRows(), fetchAmbassadors()])
@@ -137,12 +164,15 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
       branchId: row.branchId || '',
       ipAddress: row.ipAddress || '',
       computerName: row.computerName || '',
+      computerModel: row.computerModel || '',
       computerJob: row.computerJob || '',
+      chequeScanner: row.chequeScanner || 'No',
       operatingSystem: row.operatingSystem || '',
       status: row.status || 'Active',
       networkAgent: row.networkAgent || '',
       endpoint: row.endpoint || '',
       kasperskyStatus: row.kasperskyStatus || 'Updated',
+      remark: row.remark || '',
     })
     setEditingId(row.id)
     setIsFormOpen(true)
@@ -182,44 +212,103 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
   const branchName = (branchId) =>
     branches.find((branch) => String(branch.id) === String(branchId))?.branchName || 'Unknown branch'
 
-  const filteredRows = rows.filter((row) => {
-    const query = searchText.trim().toLowerCase()
-    const matchesSearch =
-      !query ||
-      String(row.ipAddress).toLowerCase().includes(query) ||
-      String(row.computerName).toLowerCase().includes(query) ||
-      String(row.networkAgent).toLowerCase().includes(query) ||
-      String(row.endpoint).toLowerCase().includes(query)
-    const matchesBranch = !filterBranch || String(row.branchId) === String(filterBranch)
-    const matchesAmbassador =
-      !filterAmbassador || String(row.ambassadorName).toLowerCase().includes(filterAmbassador.toLowerCase())
-    const matchesKaspersky = !filterKaspersky || String(row.kasperskyStatus) === filterKaspersky
-    return matchesSearch && matchesBranch && matchesAmbassador && matchesKaspersky
-  })
+  // One search box for everything: the text of each row is built once, then every typed word must match
+  const indexedRows = useMemo(
+    () =>
+      rows.map((row) => ({
+        row,
+        text: [
+          row.ipAddress,
+          row.computerName,
+          row.computerModel,
+          computerJobLabel(row.computerJob),
+          row.chequeScanner === 'Yes' ? 'cheque scanner' : '',
+          row.networkAgent,
+          row.endpoint,
+        ]
+          .join(' ')
+          .toLowerCase(),
+      })),
+    [rows],
+  )
+
+  // Filtered computers, sorted by branch so each branch forms one group
+  const filteredRows = useMemo(() => {
+    const tokens = searchText.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    return indexedRows
+      .filter(({ row, text }) => {
+        const matchesSearch = tokens.every((token) => text.includes(token))
+        const matchesBranch = !filterBranch || String(row.branchId) === String(filterBranch)
+        const matchesAmbassador =
+          !filterAmbassador || String(row.ambassadorName).toLowerCase().includes(filterAmbassador.toLowerCase())
+        const matchesKaspersky = !filterKaspersky || String(row.kasperskyStatus) === filterKaspersky
+        return matchesSearch && matchesBranch && matchesAmbassador && matchesKaspersky
+      })
+      .map(({ row }) => row)
+      .sort(
+        (a, b) =>
+          branchName(a.branchId).localeCompare(branchName(b.branchId))
+          || String(a.ipAddress).localeCompare(String(b.ipAddress), undefined, { numeric: true }),
+      )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indexedRows, branches, searchText, filterBranch, filterAmbassador, filterKaspersky])
+
+  useEffect(() => setVisibleCount(PAGE_SIZE), [searchText, filterBranch, filterAmbassador, filterKaspersky])
+
+  // Per-branch totals (over everything that matches) and the rows shown so far
+  const branchStats = useMemo(() => {
+    const stats = new Map()
+    for (const row of filteredRows) {
+      const key = String(row.branchId)
+      const entry = stats.get(key) || { count: 0, needUpdate: 0 }
+      entry.count += 1
+      if (row.kasperskyStatus === 'Not updated') entry.needUpdate += 1
+      stats.set(key, entry)
+    }
+    return stats
+  }, [filteredRows])
+
+  const groups = useMemo(() => {
+    const result = []
+    for (const row of filteredRows.slice(0, visibleCount)) {
+      const key = String(row.branchId)
+      const last = result[result.length - 1]
+      if (last && last.key === key) last.items.push(row)
+      else result.push({ key, branchId: row.branchId, owner: row.ambassadorName, items: [row] })
+    }
+    return result
+  }, [filteredRows, visibleCount])
+
+  const updatedCount = rows.filter((row) => row.kasperskyStatus === 'Updated').length
+  const needsUpdateCount = rows.filter((row) => row.kasperskyStatus === 'Not updated').length
+  const hasFilters = Boolean(searchText || filterBranch || filterAmbassador || filterKaspersky)
 
   return (
-    <div className="mx-auto max-w-[90rem]">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto max-w-5xl text-[#1f2937]">
+      {/* Header */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-[#e09f1f]">
-            {isManager ? 'Service desk operations' : 'Ambassador workspace'}
+          <h1 className="text-2xl font-bold text-[#102d54]">{isManager ? 'Computers' : 'My computers'}</h1>
+          <p className="mt-1 text-sm text-[#718096]">
+            {isManager
+              ? 'Every branch computer and its Kaspersky status.'
+              : 'The computers of your branches and their Kaspersky status.'}
           </p>
-          <h1 className="text-2xl font-bold text-[#102d54]">{isManager ? 'Computer & Kaspersky Management' : 'My Computers & Kaspersky'}</h1>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <ComputerReportButton rows={rows} branches={branches} />
           <button
             type="button"
             onClick={startNewComputer}
-            className="rounded-xl bg-[#003498] px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-[#00246B] transition"
+            className="rounded-full bg-[#003498] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#00246B]"
           >
-            + Add Computer
+            + Add a computer
           </button>
           {onBack && (
             <button
               type="button"
               onClick={onBack}
-              className="rounded-xl border border-[#dce4ee] px-4 py-2 text-sm font-semibold text-[#52657d] hover:border-[#003498] hover:text-[#003498] transition"
+              className="rounded-full px-4 py-2 text-sm font-medium text-[#52657d] transition hover:bg-[#eef2f7]"
             >
               Back
             </button>
@@ -228,123 +317,133 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
       </div>
 
       {error && (
-        <p className="mb-4 rounded-xl border border-[#f2c5c2] bg-[#fff7f6] p-3 text-sm text-[#c2413b]" role="alert">
+        <p className="mb-4 rounded-2xl bg-[#fdeceb] px-4 py-3 text-sm text-[#b3372f]" role="alert">
           {error}
-        </p>
-      )}
-
-      {isLoading && (
-        <p className="mb-4 flex items-center gap-2 rounded-xl border border-[#dce4ee] bg-white p-3 text-sm text-[#718096]" role="status">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#003498] border-t-transparent" />
-          Loading computers...
         </p>
       )}
 
       {/* Add / Edit Computer Form Modal */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#102d54]/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#102d54]/50 p-4 backdrop-blur-sm">
           <form
             onSubmit={handleSubmit}
-            className="my-8 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#e5ebf2] bg-white p-6 shadow-2xl"
+            className="my-8 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8"
           >
-            <div className="mb-4 flex items-start justify-between border-b border-gray-100 pb-3">
+            <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-[#102d54]">
-                  {editingId ? 'Edit Computer Record' : 'Register New Computer'}
-                </h2>
-                <p className="mt-0.5 text-xs text-[#718096]">
-                  Enter workstation specifications and Kaspersky antivirus status.
-                </p>
+                <h2 className="text-xl font-bold text-[#102d54]">{editingId ? 'Edit computer' : 'Add a computer'}</h2>
+                <p className="mt-1 text-sm text-[#718096]">Fill in the computer and its Kaspersky details.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition font-bold"
+                aria-label="Close"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#8a98ab] transition hover:bg-[#f1f4f9] hover:text-[#1f2937]"
               >
                 ✕
               </button>
             </div>
 
-            {/* Computer Specs */}
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#003498]">
-                1. Computer Information
-              </p>
-              <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                <WorkbookSelect name="branchId" label="Branch" value={form.branchId} onChange={handleChange} required>
-                  <option value="">Select branch</option>
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.branchName}
-                    </option>
-                  ))}
-                </WorkbookSelect>
-                <WorkbookInput
-                  name="ipAddress"
-                  label="Computer IP Address"
-                  value={form.ipAddress}
-                  onChange={handleChange}
-                  required
-                  placeholder="e.g. 10.10.12.34"
-                />
-                <WorkbookInput
-                  name="computerName"
-                  label="Computer Name (Optional)"
-                  value={form.computerName}
-                  onChange={handleChange}
-                  placeholder="e.g. BRH-BOLE-PC01"
-                />
-                <WorkbookSelect name="computerJob" label="Computer Job" value={form.computerJob} onChange={handleChange} required>
-                  <option value="">Select job</option>
-                  <option value="MTO">MTO</option>
-                  <option value="Normal">Normal</option>
-                </WorkbookSelect>
-                <WorkbookSelect name="operatingSystem" label="Operating System" value={form.operatingSystem} onChange={handleChange} required>
-                  <option value="">Select OS</option>
-                  <option value="Windows 10">Windows 10</option>
-                  <option value="Windows 11">Windows 11</option>
-                </WorkbookSelect>
-                <WorkbookSelect name="status" label="Computer Status" value={form.status} onChange={handleChange} required>
-                  <option value="Active">Active</option>
-                  <option value="Not active">Not active</option>
-                </WorkbookSelect>
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <WorkbookSelect name="branchId" label="Branch" value={form.branchId} onChange={handleChange} required>
+                <option value="">Select branch</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.branchName}
+                  </option>
+                ))}
+              </WorkbookSelect>
+              <WorkbookInput
+                name="ipAddress"
+                label="IP address"
+                value={form.ipAddress}
+                onChange={handleChange}
+                required
+                placeholder="e.g. 10.10.12.34"
+              />
+              <WorkbookInput
+                name="computerName"
+                label="Computer name (optional)"
+                value={form.computerName}
+                onChange={handleChange}
+                placeholder="e.g. BRH-BOLE-PC01"
+              />
+              <WorkbookInput
+                name="computerModel"
+                label="Computer model (optional)"
+                value={form.computerModel}
+                onChange={handleChange}
+                maxLength={100}
+                placeholder="e.g. OptiPlex 5070"
+              />
+              <WorkbookSelect name="computerJob" label="Computer job" value={form.computerJob} onChange={handleChange} required>
+                <option value="">Select job</option>
+                {COMPUTER_JOB_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </WorkbookSelect>
+              <WorkbookSelect
+                name="chequeScanner"
+                label="Cheque scanner computer"
+                value={form.chequeScanner}
+                onChange={handleChange}
+                required
+              >
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </WorkbookSelect>
+              <WorkbookSelect name="operatingSystem" label="Operating system" value={form.operatingSystem} onChange={handleChange} required>
+                <option value="">Select OS</option>
+                <option value="Windows 10">Windows 10</option>
+                <option value="Windows 11">Windows 11</option>
+              </WorkbookSelect>
+              <WorkbookSelect name="status" label="Computer status" value={form.status} onChange={handleChange} required>
+                <option value="Active">Active</option>
+                <option value="Not active">Not active</option>
+              </WorkbookSelect>
             </div>
 
-            {/* Kaspersky Antivirus Section (Merged into Computer Management!) */}
-            <div className="mt-5 border-t border-gray-100 pt-4">
-              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#003498] flex items-center gap-1.5">
-                <span>🛡️</span>
-                <span>2. Kaspersky Antivirus Details</span>
-              </p>
-              <div className="grid gap-3 sm:grid-cols-3 bg-[#f8fafc] p-3.5 rounded-xl border border-[#e2e8f0]">
+            <div className="mt-6 rounded-2xl bg-[#f6f8fb] p-4">
+              <p className="mb-3 text-sm font-semibold text-[#102d54]">Kaspersky</p>
+              <div className="grid gap-4 sm:grid-cols-3">
                 <WorkbookInput
                   name="networkAgent"
-                  label="Net Agent IP / Version"
+                  label="Net Agent IP / version"
                   value={form.networkAgent}
                   onChange={handleChange}
                   placeholder="e.g. 192.168.1.10 or 14.2"
                 />
                 <WorkbookInput
                   name="endpoint"
-                  label="Endpoint Protection IP / Version"
+                  label="Endpoint IP / version"
                   value={form.endpoint}
                   onChange={handleChange}
                   placeholder="e.g. 192.168.1.10 or 12.5"
                 />
-                <WorkbookSelect
-                  name="kasperskyStatus"
-                  label="Kaspersky Status"
-                  value={form.kasperskyStatus}
-                  onChange={handleChange}
-                >
+                <WorkbookSelect name="kasperskyStatus" label="Status" value={form.kasperskyStatus} onChange={handleChange}>
                   <option value="Updated">Updated</option>
                   <option value="Not updated">Not updated</option>
                 </WorkbookSelect>
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+            <label className="mt-6 block">
+              <span className="mb-1 block text-xs font-semibold text-[#52657d]">Any issue? (optional)</span>
+              <textarea
+                name="remark"
+                value={form.remark}
+                onChange={handleChange}
+                rows="3"
+                maxLength={255}
+                placeholder="e.g. slow, no internet, Kaspersky not updating"
+                className={`${fieldClass} resize-none py-2`}
+              />
+              <span className="mt-1 block text-right text-[11px] text-[#8a98ab]">{form.remark.length}/255</span>
+            </label>
+
+            <div className="mt-6 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -352,16 +451,16 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
                   setEditingId(null)
                   setIsFormOpen(false)
                 }}
-                className="rounded-xl border border-[#dce4ee] px-5 py-2 text-xs font-semibold text-[#52657d] hover:bg-gray-50 transition"
+                className="rounded-full px-5 py-2 text-sm font-medium text-[#52657d] transition hover:bg-[#f1f4f9]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="rounded-xl bg-[#003498] px-6 py-2 text-xs font-bold text-white shadow-md hover:bg-[#00246B] transition disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-full bg-[#003498] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#00246B] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSaving ? 'Saving...' : editingId ? 'Save Changes' : 'Register Computer'}
+                {isSaving ? 'Saving...' : editingId ? 'Save changes' : 'Add computer'}
               </button>
             </div>
           </form>
@@ -369,18 +468,15 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
       )}
 
       {/* Branch manager editing switch */}
-      <section className="mb-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-[#e5ebf2] bg-white p-4 shadow-[0_8px_24px_rgba(16,45,84,0.05)]">
-        <div className="max-w-xl">
-          <h2 className="text-sm font-bold text-[#102d54]">Branch manager editing, chose a branch to allow them edit <keygen />aspersky</h2>
-          <p></p>
-        </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="w-56">
-            <WorkbookSelect
-              name="permissionBranch"
-              label="Branch"
+      <section className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#f6f8fb] px-5 py-4">
+        <h2 className="text-sm font-semibold text-[#102d54]">Let a branch manager edit Kaspersky</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="w-52">
+            <select
+              aria-label="Branch"
               value={permissionBranchId}
               onChange={(event) => setPermissionBranchId(event.target.value)}
+              className={fieldClass}
             >
               <option value="">Select branch</option>
               {branches.map((branch) => (
@@ -388,7 +484,7 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
                   {branch.branchName}
                 </option>
               ))}
-            </WorkbookSelect>
+            </select>
           </div>
           <button
             type="button"
@@ -396,7 +492,7 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
             aria-checked={isManagerEditOn}
             disabled={!selectedPermissionBranch || isTogglingEdit}
             onClick={handleToggleManagerEdit}
-            className="flex min-h-9 items-center gap-2 rounded-xl border border-[#dce4ee] px-3 py-1.5 text-xs font-bold text-[#52657d] transition hover:border-[#003498] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-10 items-center gap-2.5 rounded-full bg-white px-4 py-1.5 text-sm font-medium text-[#52657d] transition hover:text-[#003498] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${isManagerEditOn ? 'bg-emerald-500' : 'bg-gray-300'}`}>
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${isManagerEditOn ? 'translate-x-4' : 'translate-x-0.5'}`} />
@@ -406,15 +502,19 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
         </div>
       </section>
 
-      {/* Filter and Search Bar */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <WorkbookSelect
-            name="filterBranch"
-            label="Filter by Branch"
-            value={filterBranch}
-            onChange={(event) => setFilterBranch(event.target.value)}
-          >
+      {/* Search and filters */}
+      <div className="mb-5 flex flex-wrap items-end gap-3">
+        <div className="min-w-[16rem] flex-1">
+          <WorkbookInput
+            name="search"
+            label="Search"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+            placeholder="IP, name, model, job, cheque scanner..."
+          />
+        </div>
+        <div className="w-44">
+          <WorkbookSelect name="filterBranch" label="Branch" value={filterBranch} onChange={(event) => setFilterBranch(event.target.value)}>
             <option value="">All branches</option>
             {branches.map((branch) => (
               <option key={branch.id} value={branch.id}>
@@ -422,11 +522,12 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
               </option>
             ))}
           </WorkbookSelect>
-
-          {isManager && (
+        </div>
+        {isManager && (
+          <div className="w-44">
             <WorkbookSelect
               name="filterAmbassador"
-              label="Filter by Ambassador"
+              label="Ambassador"
               value={filterAmbassador}
               onChange={(event) => setFilterAmbassador(event.target.value)}
             >
@@ -437,33 +538,21 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
                 </option>
               ))}
             </WorkbookSelect>
-          )}
-
+          </div>
+        )}
+        <div className="w-44">
           <WorkbookSelect
             name="filterKaspersky"
-            label="Filter by Kaspersky"
+            label="Kaspersky"
             value={filterKaspersky}
             onChange={(event) => setFilterKaspersky(event.target.value)}
           >
-            <option value="">All Kaspersky statuses</option>
+            <option value="">Any status</option>
             <option value="Updated">Updated</option>
             <option value="Not updated">Not updated</option>
           </WorkbookSelect>
-
-          <div className="block">
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#52657d]">
-              Search IP / Name / Agent
-            </span>
-            <input
-              value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
-              placeholder="Type IP, computer name, or agent..."
-              className="min-h-9 w-60 rounded-md border border-[#dce4ee] bg-[#fbfcfe] px-2.5 text-xs text-[#1f2937] outline-none transition focus:border-[#003498] focus:ring-2 focus:ring-[#003498]/20"
-            />
-          </div>
         </div>
-
-        {(searchText || filterBranch || filterAmbassador || filterKaspersky) && (
+        {hasFilters && (
           <button
             type="button"
             onClick={() => {
@@ -472,115 +561,166 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
               setFilterAmbassador('')
               setFilterKaspersky('')
             }}
-            className="rounded-xl border border-[#dce4ee] px-3 py-1.5 text-xs font-semibold text-[#52657d] hover:border-[#003498] hover:text-[#003498] transition"
+            className="min-h-10 rounded-full px-4 text-sm font-medium text-[#003498] transition hover:bg-[#eef2f7]"
           >
-            Clear Filters
+            Clear filters
           </button>
         )}
       </div>
 
-      {/* Main Computer and Kaspersky Data Table */}
-      <section className="mt-4 overflow-hidden rounded-2xl border border-[#e5ebf2] bg-white shadow-[0_8px_24px_rgba(16,45,84,0.05)]">
-        <div className="flex items-center justify-between border-b border-[#e4eaf0] bg-[#f8fafc] px-5 py-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-[#102d54]">
-              {isManager ? 'All Registered Computers & Kaspersky Status' : 'My Branch Computers & Kaspersky'}
-            </h2>
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600">
-              {filteredRows.length} of {rows.length}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-[#52657d]">
-            <span className="inline-flex items-center gap-1 font-semibold text-emerald-700">
-              ● {rows.filter((r) => r.kasperskyStatus === 'Updated').length} Updated
-            </span>
-            <span>•</span>
-            <span className="inline-flex items-center gap-1 font-semibold text-amber-700">
-              ▲ {rows.filter((r) => r.kasperskyStatus === 'Not updated').length} Needs Update
-            </span>
-          </div>
+      {/* Summary */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+        <h2 className="text-sm font-semibold text-[#102d54]">
+          {filteredRows.length} {filteredRows.length === 1 ? 'computer' : 'computers'}
+          {hasFilters && <span className="ml-2 font-normal text-[#8a98ab]">of {rows.length}</span>}
+        </h2>
+        <p className="flex items-center gap-4 text-xs text-[#52657d]">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            {updatedCount} up to date
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            {needsUpdateCount} need an update
+          </span>
+        </p>
+      </div>
+
+      {/* Computers, one card per branch */}
+      {isLoading ? (
+        <p className="rounded-2xl bg-[#f6f8fb] px-4 py-10 text-center text-sm text-[#718096]">
+          <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#003498] border-t-transparent align-middle" />
+          Loading computers...
+        </p>
+      ) : rows.length === 0 ? (
+        <div className="rounded-2xl bg-[#f6f8fb] px-4 py-14 text-center">
+          <p className="text-base font-semibold text-[#102d54]">No computers yet</p>
+          <p className="mt-1 text-sm text-[#718096]">Add your first computer to start tracking its Kaspersky status.</p>
+          <button
+            type="button"
+            onClick={startNewComputer}
+            className="mt-5 rounded-full bg-[#003498] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#00246B]"
+          >
+            + Add a computer
+          </button>
         </div>
-
-        <div className="overflow-x-auto">
-          <div className="min-w-[68rem]">
-            <div className="grid grid-cols-[1.2fr_1fr_1fr_0.7fr_0.8fr_0.8fr_0.9fr_0.9fr_0.9fr_auto] gap-2.5 border-b border-[#dfe8ee] px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-[#52657d] bg-[#fdfefe]">
-              <span>Branch</span>
-              <span>Computer IP</span>
-              <span>Computer Name</span>
-              <span>Job</span>
-              <span>OS</span>
-              <span>Status</span>
-              <span>Net Agent</span>
-              <span>Endpoint</span>
-              <span>Kaspersky</span>
-              <span className="text-right">Actions</span>
-            </div>
-
-            {isLoading ? (
-              <p className="px-4 py-8 text-center text-sm text-[#718096]">Loading computers and Kaspersky status...</p>
-            ) : filteredRows.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-[#718096]">No computers found matching your criteria.</p>
-            ) : (
-              filteredRows.map((row) => (
-                <div
-                  key={row.id}
-                  className="grid grid-cols-[1.2fr_1fr_1fr_0.7fr_0.8fr_0.8fr_0.9fr_0.9fr_0.9fr_auto] items-center gap-2.5 border-b border-[#edf1f5] px-4 py-3 text-xs text-[#52657d] last:border-0 hover:bg-blue-50/20 transition-colors"
-                >
-                  <span className="font-semibold text-[#102d54] truncate">{branchName(row.branchId)}</span>
-                  <span className="font-mono text-[11px] text-[#102d54]">{row.ipAddress}</span>
-                  <span className="truncate">{row.computerName || '—'}</span>
-                  <span>{row.computerJob || '—'}</span>
-                  <span>{row.operatingSystem}</span>
-                  <span>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        row.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {row.status}
+      ) : filteredRows.length === 0 ? (
+        <p className="rounded-2xl bg-[#f6f8fb] px-4 py-10 text-center text-sm text-[#718096]">
+          No computers match what you're looking for.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {groups.map((group) => {
+            const name = branchName(group.branchId)
+            const stats = branchStats.get(group.key) || { count: group.items.length, needUpdate: 0 }
+            return (
+              <details key={group.key} open className="group overflow-hidden rounded-2xl border border-[#e8edf3] bg-white">
+                <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 transition hover:bg-[#f8fafc] [&::-webkit-details-marker]:hidden">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e8eefb] text-base font-bold text-[#003498]">
+                    {name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-base font-semibold text-[#102d54]">{name}</span>
+                    <span className="block truncate text-xs text-[#8a98ab]">
+                      {isManager && group.owner ? `${group.owner} • ` : ''}
+                      {stats.count} {stats.count === 1 ? 'computer' : 'computers'}
                     </span>
                   </span>
-                  <span className="font-mono text-[11px]">{row.networkAgent || '—'}</span>
-                  <span className="font-mono text-[11px]">{row.endpoint || '—'}</span>
-                  <span>
-                    {row.kasperskyStatus ? (
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          row.kasperskyStatus === 'Updated'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}
-                      >
-                        <span>{row.kasperskyStatus === 'Updated' ? '✓' : '▲'}</span>
-                        <span>{row.kasperskyStatus}</span>
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 italic text-[11px]">—</span>
-                    )}
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      stats.needUpdate === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                    }`}
+                  >
+                    {stats.needUpdate === 0 ? 'All up to date' : `${stats.needUpdate} need an update`}
                   </span>
-                  <div className="flex items-center justify-end gap-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => editRow(row)}
-                      className="font-bold text-[#003498] hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(row.id)}
-                      className="font-bold text-[#c2413b] hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                  <span className="text-[#8a98ab] transition group-open:rotate-180" aria-hidden="true">
+                    ▾
+                  </span>
+                </summary>
+
+                <ul className="divide-y divide-[#f0f3f7] border-t border-[#f0f3f7]">
+                  {group.items.map((row) => {
+                    const isUpdated = row.kasperskyStatus === 'Updated'
+                    const subline = [row.computerName ? row.ipAddress : '', row.computerModel].filter(Boolean).join(' • ')
+                    return (
+                      <li key={row.id} className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4 transition hover:bg-[#fafbfd]">
+                        <div className="min-w-[13rem] flex-1">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`h-2.5 w-2.5 shrink-0 rounded-full ${row.status === 'Active' ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                              title={row.status}
+                            />
+                            <p className="truncate text-sm font-semibold text-[#102d54]">{row.computerName || row.ipAddress}</p>
+                          </div>
+                          {subline && <p className="mt-0.5 pl-[18px] text-xs text-[#8a98ab]">{subline}</p>}
+                          <div className="mt-2 flex flex-wrap gap-1.5 pl-[18px]">
+                            {row.computerJob && <Tag>{computerJobLabel(row.computerJob)}</Tag>}
+                            {row.operatingSystem && <Tag>{row.operatingSystem}</Tag>}
+                            {row.chequeScanner === 'Yes' && <Tag tone="blue">Cheque scanner</Tag>}
+                            {row.status !== 'Active' && <Tag>{row.status}</Tag>}
+                          </div>
+                        </div>
+
+                        <div className="grid min-w-[12rem] flex-1 grid-cols-2 gap-4">
+                          <Detail label="Net Agent">{row.networkAgent || '—'}</Detail>
+                          <Detail label="Endpoint">{row.endpoint || '—'}</Detail>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          {row.kasperskyStatus ? (
+                            <span
+                              className={`mr-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+                                isUpdated ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                              }`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${isUpdated ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                              {row.kasperskyStatus}
+                            </span>
+                          ) : (
+                            <span className="mr-2 text-xs italic text-gray-400">No status</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => editRow(row)}
+                            className="rounded-full px-3 py-1.5 text-xs font-semibold text-[#003498] transition hover:bg-[#e8eefb]"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(row.id)}
+                            className="rounded-full px-3 py-1.5 text-xs font-semibold text-[#b3372f] transition hover:bg-[#fdeceb]"
+                          >
+                            Delete
+                          </button>
+                        </div>
+
+                        {row.remark && (
+                          <p className="w-full rounded-xl bg-[#fff6e0] px-3 py-2 text-xs text-[#8a5a00]">
+                            <span className="font-semibold">Issue:</span> {row.remark}
+                          </p>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </details>
+            )
+          })}
+
+          {filteredRows.length > visibleCount && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+              className="w-full rounded-2xl bg-[#f6f8fb] py-3 text-sm font-semibold text-[#003498] transition hover:bg-[#e8eefb]"
+            >
+              Show {Math.min(PAGE_SIZE, filteredRows.length - visibleCount)} more ({filteredRows.length - visibleCount} not shown yet)
+            </button>
+          )}
         </div>
-      </section>
-      <p className="mt-3 text-xs text-[#718096]">Signed in as {username}.</p>
+      )}
+
+      <p className="mt-6 text-xs text-[#8a98ab]">Signed in as {username}</p>
     </div>
   )
 }

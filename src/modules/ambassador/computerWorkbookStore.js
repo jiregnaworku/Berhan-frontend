@@ -19,6 +19,17 @@ async function request(path, options = {}) {
   return response.status === 204 ? null : response.json()
 }
 
+// What a computer is used for. The saved value stays short; the label is what people read.
+export const COMPUTER_JOB_OPTIONS = [
+  { value: 'MTO', label: 'MTO Computer' },
+  { value: 'Normal', label: 'Normal Computer' },
+  { value: 'Opening', label: 'Opening Computer' },
+]
+
+export function computerJobLabel(value) {
+  return COMPUTER_JOB_OPTIONS.find((option) => option.value === value)?.label || value || ''
+}
+
 function fromApiRow(row) {
   return {
     id: row.id,
@@ -30,12 +41,15 @@ function fromApiRow(row) {
     ambassadorUsername: row.ambassador_username || '',
     ipAddress: row.ip_address || '',
     computerName: row.computer_name || '',
+    computerModel: row.computer_model || '',
     computerJob: row.computer_job || '',
+    chequeScanner: [true, 1, '1', 'Yes', 'yes'].includes(row.cheque_scanner) ? 'Yes' : 'No',
     operatingSystem: row.operating_system || '',
     status: row.status || '',
     networkAgent: row.network_agent || '',
     endpoint: row.endpoint || row.endpoint_protection || '',
     kasperskyStatus: row.kaspersky_status || '',
+    remark: row.remark || '',
   }
 }
 
@@ -58,12 +72,15 @@ export async function createWorkbookRow(row) {
       ambassador_name: row.ambassadorName,
       ip_address: row.ipAddress,
       computer_name: row.computerName,
+      computer_model: row.computerModel || null,
       computer_job: row.computerJob,
+      cheque_scanner: row.chequeScanner === 'Yes',
       operating_system: row.operatingSystem,
       status: row.status,
       network_agent: row.networkAgent || null,
       endpoint: row.endpoint || null,
       kaspersky_status: row.kasperskyStatus || null,
+      remark: row.remark || null,
     }),
   })
   return fromApiRow(workbookRow)
@@ -76,12 +93,15 @@ export async function updateWorkbookRow(id, row) {
       branch_id: row.branchId,
       ip_address: row.ipAddress,
       computer_name: row.computerName,
+      computer_model: row.computerModel || null,
       computer_job: row.computerJob,
+      cheque_scanner: row.chequeScanner === 'Yes',
       operating_system: row.operatingSystem,
       status: row.status,
       network_agent: row.networkAgent || null,
       endpoint: row.endpoint || null,
       kaspersky_status: row.kasperskyStatus || null,
+      remark: row.remark || null,
     }),
   })
   return fromApiRow(workbookRow)

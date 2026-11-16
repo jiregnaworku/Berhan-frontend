@@ -72,22 +72,22 @@ export function OurBranchContent() {
   const [error, setError] = useState('')
   const { notify } = useDashboardToast()
   const [editingComputer, setEditingComputer] = useState(null)
-  const [kasperskyForm, setKasperskyForm] = useState({ networkAgent: '', endpoint: '' })
+  const [kasperskyForm, setKasperskyForm] = useState({ endpoint: '' })
   const [isSavingKaspersky, setIsSavingKaspersky] = useState(false)
 
   function startKasperskyEdit(computer) {
     setEditingComputer(computer)
-    setKasperskyForm({ networkAgent: computer.networkAgent || '', endpoint: computer.endpoint || '' })
+    setKasperskyForm({ endpoint: computer.endpoint || '' })
   }
 
   async function handleKasperskySubmit(event) {
     event.preventDefault()
     setIsSavingKaspersky(true)
     try {
-      const savedRow = await updateKasperskyDetails(editingComputer.id, kasperskyForm)
+      const savedRow = await updateKasperskyDetails(editingComputer.id, { endpoint: kasperskyForm.endpoint })
       setComputers((current) => current.map((computer) => (computer.id === savedRow.id ? savedRow : computer)))
       setEditingComputer(null)
-      notify('Net Agent and Endpoint updated successfully.', 'success')
+      notify('Endpoint Protection details updated successfully.', 'success')
     } catch (saveError) {
       notify(Object.values(saveError.errors || {}).flat()[0] || saveError.message)
     } finally {
@@ -155,7 +155,7 @@ export function OurBranchContent() {
 
           <SectionCard title="Branch computers" subtitle={`${computers.length} ${computers.length === 1 ? 'computer' : 'computers'} registered`}>
             {computers.length === 0 ? <p className="p-5 text-sm text-[#718096]">No computers have been registered yet.</p> : (
-              <div className="overflow-x-auto"><table className="w-full min-w-[75rem] text-left text-sm"><thead className="border-b border-[#dfe8ee] bg-[#fbfcfe] text-[10px] uppercase tracking-wide text-[#52657d]"><tr><th className="px-5 py-3">IP address</th><th className="px-5 py-3">Computer name</th><th className="px-5 py-3">Job</th><th className="px-5 py-3">Operating system</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Network agent</th><th className="px-5 py-3">Endpoint</th><th className="px-5 py-3">Kaspersky status</th>{branch.managerCanEdit && <th className="px-5 py-3 text-right">Actions</th>}</tr></thead><tbody className="divide-y divide-[#edf1f5]">{computers.map((computer) => <tr key={computer.id} className="text-[#52657d] hover:bg-[#f8fafc]"><td className="px-5 py-3 font-semibold text-[#102d54]">{computer.ipAddress}</td><td className="px-5 py-3">{valueOrFallback(computer.computerName)}</td><td className="px-5 py-3">{valueOrFallback(computer.computerJob)}</td><td className="px-5 py-3">{computer.operatingSystem}</td><td className="px-5 py-3"><StatusBadge value={computer.status} /></td><td className="px-5 py-3">{valueOrFallback(computer.networkAgent)}</td><td className="px-5 py-3">{valueOrFallback(computer.endpoint)}</td><td className="px-5 py-3"><StatusBadge value={computer.kasperskyStatus} /></td>{branch.managerCanEdit && <td className="px-5 py-3 text-right"><button type="button" onClick={() => startKasperskyEdit(computer)} className="rounded-full border border-[#cfe0f3] px-3 py-1 text-xs font-bold text-[#1d5b9e] hover:bg-[#e8f0fe]">Edit</button></td>}</tr>)}</tbody></table></div>
+              <div className="overflow-x-auto"><table className="w-full min-w-[65rem] text-left text-sm"><thead className="border-b border-[#dfe8ee] bg-[#fbfcfe] text-[10px] uppercase tracking-wide text-[#52657d]"><tr><th className="px-5 py-3">IP address</th><th className="px-5 py-3">Computer name</th><th className="px-5 py-3">Job</th><th className="px-5 py-3">Operating system</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Endpoint</th><th className="px-5 py-3">Kaspersky status</th>{branch.managerCanEdit && <th className="px-5 py-3 text-right">Actions</th>}</tr></thead><tbody className="divide-y divide-[#edf1f5]">{computers.map((computer) => <tr key={computer.id} className="text-[#52657d] hover:bg-[#f8fafc]"><td className="px-5 py-3 font-semibold text-[#102d54]">{computer.ipAddress}</td><td className="px-5 py-3">{valueOrFallback(computer.computerName)}</td><td className="px-5 py-3">{valueOrFallback(computer.computerJob)}</td><td className="px-5 py-3">{computer.operatingSystem}</td><td className="px-5 py-3"><StatusBadge value={computer.status} /></td><td className="px-5 py-3">{valueOrFallback(computer.endpoint)}</td><td className="px-5 py-3"><StatusBadge value={computer.kasperskyStatus} /></td>{branch.managerCanEdit && <td className="px-5 py-3 text-right"><button type="button" onClick={() => startKasperskyEdit(computer)} className="rounded-full border border-[#cfe0f3] px-3 py-1 text-xs font-bold text-[#1d5b9e] hover:bg-[#e8f0fe]">Edit</button></td>}</tr>)}</tbody></table></div>
             )}
           </SectionCard>
         </div>
@@ -165,10 +165,10 @@ export function OurBranchContent() {
           <form onSubmit={handleKasperskySubmit} className="w-full max-w-md rounded-2xl border border-[#e5ebf2] bg-white p-5 shadow-[0_8px_24px_rgba(16,45,84,0.12)]">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-[#102d54]">Update Kaspersky details</h2>
+                <h2 className="text-lg font-bold text-[#102d54]">Update Endpoint Protection</h2>
                 <p className="mt-1 text-xs text-[#718096]">Computer {editingComputer.ipAddress}{editingComputer.computerName ? ` · ${editingComputer.computerName}` : ''}</p>
               </div>
-              <button type="button" onClick={() => setEditingComputer(null)} className="text-2xl font-semibold text-[#718096]" aria-label="Close Kaspersky form">×</button>
+              <button type="button" onClick={() => setEditingComputer(null)} className="text-2xl font-semibold text-[#718096]" aria-label="Close Endpoint Protection form">×</button>
             </div>
             <div className="space-y-4">
               <label className="block">
