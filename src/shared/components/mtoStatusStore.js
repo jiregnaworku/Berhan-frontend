@@ -35,6 +35,8 @@ function fromApiStatus(row) {
     branchId: row.branch_id,
     mto: row.mto || '',
     status: row.status || '',
+    issueType: row.issue_type || '',
+    issueDetail: row.issue_detail || '',
     remark: row.remark || '',
     submittedBy: row.submitted_by || '',
     reviewState: row.review_state || 'pending',
@@ -55,10 +57,16 @@ export async function fetchMtoOverview() {
 }
 
 // Branch manager only (and only while editing is turned on for the branch).
-export async function submitMtoStatus({ mto, status, remark }) {
+export async function submitMtoStatus({ mto, status, issueType, issueDetail, remark }) {
   const { mtoStatus } = await request('/mto-statuses', {
     method: 'POST',
-    body: JSON.stringify({ mto, status, remark: remark || null }),
+    body: JSON.stringify({
+      mto,
+      status,
+      issue_type: issueType || null,
+      issue_detail: issueDetail || null,
+      remark: remark || null,
+    }),
   })
   return fromApiStatus(mtoStatus)
 }

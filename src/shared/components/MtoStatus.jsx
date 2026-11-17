@@ -9,7 +9,13 @@ import {
 } from './mtoStatusStore.js'
 
 const MTO_OPTIONS = ['RIA', 'Western Union', 'MoneyGram', 'Transfast', 'Dahabshiil']
-const STATUS_OPTIONS = ['Working', 'Not working', 'Do not have user', 'Unknown']
+const STATUS_OPTIONS = ['Working', 'Not working']
+// When the status is "Not working": first the kind of issue, then what exactly
+const ISSUE_OPTIONS = {
+  'User Right Issue': ["Don't have user", 'User expired'],
+  'Application Issue': ['Not installed at all', 'Installed but not working'],
+}
+const emptyForm = { mto: '', status: '', issueType: '', issueDetail: '', remark: '' }
 const PAGE_SIZE = 30
 const MAX_PICKER_OPTIONS = 40
 
@@ -168,7 +174,7 @@ export function MtoStatusContent({ roleId = 'ambassador', username, onBack }) {
   const [isTogglingAccess, setIsTogglingAccess] = useState(false)
   const [isBulkBusy, setIsBulkBusy] = useState(false)
 
-  const [form, setForm] = useState({ mto: '', status: '', remark: '' })
+  const [form, setForm] = useState(emptyForm)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [acceptingId, setAcceptingId] = useState(null)
 
@@ -216,19 +222,38 @@ export function MtoStatusContent({ roleId = 'ambassador', username, onBack }) {
 
   useEffect(() => setVisibleCount(PAGE_SIZE), [searchText, filterMto, filterState])
 
+  // Choosing a different status or issue type clears the choices that depended on it
   function handleFormChange(event) {
     const { name, value } = event.target
-    setForm((current) => ({ ...current, [name]: value }))
+    setForm((current) => {
+      const next = { ...current, [name]: value }
+      if (name === 'status') {
+        next.issueType = ''
+        next.issueDetail = ''
+      }
+      if (name === 'issueType') next.issueDetail = ''
+      return next
+    })
   }
+
+  // The remark box (and Submit) appear once the choices above it are complete
+  const showRemark =
+    form.status === 'Working' || (form.status === 'Not working' && Boolean(form.issueType) && Boolean(form.issueDetail))
 
   async function handleSubmit(event) {
     event.preventDefault()
+    if (!form.remark.trim()) {
+      const message = 'Please write a remark.'
+      setError(message)
+      notify(message)
+      return
+    }
     setError('')
     setIsSubmitting(true)
     try {
       const saved = await submitMtoStatus(form)
       setStatuses((current) => [saved, ...current])
-      setForm({ mto: '', status: '', remark: '' })
+      setForm(emptyForm)
       notify('MTO status submitted. Your ambassador will respond.', 'success')
     } catch (submitError) {
       const message = Object.values(submitError.errors || {}).flat()[0] || submitError.message
@@ -406,40 +431,86 @@ export function MtoStatusContent({ roleId = 'ambassador', username, onBack }) {
                     ))}
                   </select>
                 </label>
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-[#52657d]">Status</span>
-                  <select name="status" value={form.status} onChange={handleFormChange} required disabled={!canReport} className={fieldClass}>
-                    <option value="">Select status</option>
-                    {STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+
+                {form.mto && (
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-semibold text-[#52657d]">Status</span>
+                    <select name="status" value={form.status} onChange={handleFormChange} required disabled={!canReport} className={fieldClass}>
+                      <option value="">Select status</option>
+                      {STATUS_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
+                {form.status === 'Not working' && (
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-semibold text-[#52657d]">Issue type</span>
+                    <select name="issueType" value={form.issueType} onChange={handleFormChange} required disabled={!canReport} className={fieldClass}>
+                      <option value="">Select issue type</option>
+                      {Object.keys(ISSUE_OPTIONS).map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
+                {form.status === 'Not working' && form.issueType && (
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-semibold text-[#52657d]">
+                      {form.issueType === 'User Right Issue' ? 'User right problem' : 'Application problem'}
+                    </span>
+                    <select name="issueDetail" value={form.issueDetail} onChange={handleFormChange} required disabled={!canReport} className={fieldClass}>
+                      <option value="">Select one</option>
+                      {ISSUE_OPTIONS[form.issueType].map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               </div>
-              <label className="mt-4 block">
-                <span className="mb-1 block text-xs font-semibold text-[#52657d]">Remark (optional)</span>
-                <textarea
-                  name="remark"
-                  value={form.remark}
-                  onChange={handleFormChange}
-                  rows="3"
-                  maxLength={500}
-                  disabled={!canReport}
-                  placeholder="Tell your ambassador more about it"
-                  className={`${fieldClass} resize-none py-2`}
-                />
-              </label>
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={!canReport || isSubmitting}
-                  className="rounded-full bg-[#003498] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#00246B] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit'}
-                </button>
-              </div>
+
+              {showRemark && (
+                <>
+                  <label className="mt-4 block">
+                    <span className="mb-1 block text-xs font-semibold text-[#52657d]">
+                      Remark <span className="text-[#b3372f]">*</span>
+                    </span>
+                    <textarea
+                      name="remark"
+                      value={form.remark}
+                      onChange={handleFormChange}
+                      rows="3"
+                      maxLength={500}
+                      required
+                      disabled={!canReport}
+                      placeholder={
+                        form.status === 'Working'
+                          ? 'Write a short note about how it is working'
+                          : 'Explain what is wrong so your ambassador can help'
+                      }
+                      className={`${fieldClass} resize-none py-2`}
+                    />
+                  </label>
+                  <div className="mt-4 flex items-center justify-end gap-3">
+                    {!form.remark.trim() && <span className="text-xs text-[#8a98ab]">A remark is required.</span>}
+                    <button
+                      type="submit"
+                      disabled={!canReport || isSubmitting || !form.remark.trim()}
+                      className="rounded-full bg-[#003498] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#00246B] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Submit'}
+                    </button>
+                  </div>
+                </>
+              )}
             </form>
           )}
         </section>
@@ -548,6 +619,14 @@ export function MtoStatusContent({ roleId = 'ambassador', username, onBack }) {
                         {' • '}
                         {row.submittedBy} • {formatDate(row.createdAt)}
                       </p>
+                      {row.issueType && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <span className="rounded-full bg-[#fdeceb] px-2.5 py-0.5 text-xs font-medium text-[#b3372f]">{row.issueType}</span>
+                          {row.issueDetail && (
+                            <span className="rounded-full bg-[#f1f4f9] px-2.5 py-0.5 text-xs font-medium text-[#52657d]">{row.issueDetail}</span>
+                          )}
+                        </div>
+                      )}
                       {row.remark && (
                         <p className="mt-2 rounded-xl bg-[#f6f8fb] px-3 py-2 text-xs text-[#52657d]">{row.remark}</p>
                       )}

@@ -5,10 +5,10 @@ import { fetchBranches } from './branchStore.js'
 import {
   createNetworkRegistration,
   deleteNetworkRegistration,
-  downloadNetworkReport,
   fetchNetworkRegistrations,
   updateNetworkRegistration,
 } from './networkStore.js'
+import NetworkReportButton from './NetworkReportButton.jsx'
 
 const emptyRegistration = {
   reason: 'ELPA',
@@ -67,10 +67,10 @@ export function NetworkContent({ username }) {
   const [branchSearch, setBranchSearch] = useState('')
   const [isBranchMenuOpen, setIsBranchMenuOpen] = useState(false)
   const [visibleCount, setVisibleCount] = useState(BRANCH_PAGE_SIZE)
-  const [selectedMonth, setSelectedMonth] = useState('')
+  const [fromMonth, setFromMonth] = useState('')
+  const [toMonth, setToMonth] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [isExporting, setIsExporting] = useState(false)
   const [error, setError] = useState('')
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isBranchesLoading, setIsBranchesLoading] = useState(true)
@@ -91,9 +91,10 @@ export function NetworkContent({ username }) {
       .finally(() => setIsBranchesLoading(false))
   }, [notify, username])
 
+  // Everything is loaded once; the From / To months below filter it on screen
   useEffect(() => {
     let isMounted = true
-    fetchNetworkRegistrations(selectedMonth)
+    fetchNetworkRegistrations()
       .then((loadedRegistrations) => {
         if (isMounted) setRegistrations(loadedRegistrations)
       })
@@ -110,16 +111,24 @@ export function NetworkContent({ username }) {
     return () => {
       isMounted = false
     }
-  }, [notify, selectedMonth])
+  }, [notify])
 
   function handleChange(event) {
     const { name, value } = event.target
     setForm((current) => ({ ...current, [name]: value }))
   }
 
-  function handleMonthChange(event) {
-    setIsLoading(true)
-    setSelectedMonth(event.target.value)
+  // Keep the range in order: From can never be after To
+  function handleFromChange(event) {
+    const value = event.target.value
+    setFromMonth(value)
+    if (value && toMonth && value > toMonth) setToMonth(value)
+  }
+
+  function handleToChange(event) {
+    const value = event.target.value
+    setToMonth(value)
+    if (value && fromMonth && value < fromMonth) setFromMonth(value)
   }
 
   function toggleBranch(branchName) {
@@ -228,9 +237,7 @@ export function NetworkContent({ username }) {
         })
         const saved = result?.registration || result || {}
         setRegistrations((current) =>
-          current
-            .map((item) => (item.id === editingId ? { ...item, ...form, ...saved } : item))
-            .filter((item) => !selectedMonth || (item.incidentDate && item.incidentDate.startsWith(selectedMonth))),
+          current.map((item) => (item.id === editingId ? { ...item, ...form, ...saved } : item)),
         )
         closeForm()
         notify('Outage report updated.', 'success')
@@ -242,12 +249,7 @@ export function NetworkContent({ username }) {
         })
 
         const newEntries = result.registrations || [result.registration]
-        setRegistrations((current) => {
-          const filteredNew = selectedMonth
-            ? newEntries.filter((r) => r.incidentDate && r.incidentDate.startsWith(selectedMonth))
-            : newEntries
-          return [...filteredNew, ...current]
-        })
+        setRegistrations((current) => [...newEntries, ...current])
 
         closeForm()
         notify(
@@ -264,21 +266,19 @@ export function NetworkContent({ username }) {
     }
   }
 
-  async function handleExport() {
-    const month = selectedMonth || new Date().toISOString().slice(0, 7)
-    setError('')
-    setIsExporting(true)
-    try {
-      await downloadNetworkReport(month, username)
-    } catch (exportError) {
-      setError(exportError.message)
-      notify(exportError.message)
-    } finally {
-      setIsExporting(false)
-    }
-  }
+  // Incidents inside the chosen From / To months (empty = no limit on that side)
+  const visibleRegistrations = useMemo(
+    () =>
+      registrations.filter((entry) => {
+        const month = String(entry.incidentDate || '').slice(0, 7)
+        if (fromMonth && month < fromMonth) return false
+        if (toMonth && month > toMonth) return false
+        return true
+      }),
+    [registrations, fromMonth, toMonth],
+  )
 
-  const grouped = registrations.reduce((groups, registration) => {
+  const grouped = visibleRegistrations.reduce((groups, registration) => {
     const date = new Date(`${registration.incidentDate}T00:00:00`)
     const key = getMonthKey(date)
     if (!groups[key]) groups[key] = { date, entries: [] }
@@ -293,6 +293,9 @@ export function NetworkContent({ username }) {
       : selectedBranches.length === 1
       ? selectedBranches[0]
       : `${selectedBranches.length} branches selected`
+
+  const monthInputClass =
+    'min-h-10 rounded-xl border border-[#e3e8ef] bg-white px-3 text-sm text-[#1f2937] outline-none transition focus:border-[#003498] focus:ring-2 focus:ring-[#003498]/15'
 
   return (
     <div className="mx-auto max-w-4xl text-[#1f2937]">
@@ -642,31 +645,31 @@ export function NetworkContent({ username }) {
           <h2 className="text-lg font-bold text-[#102d54]">Past incidents</h2>
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 text-sm text-[#52657d]">
-              Month
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={handleMonthChange}
-                className="min-h-10 rounded-xl border border-[#e3e8ef] bg-white px-3 text-sm text-[#1f2937] outline-none transition focus:border-[#003498] focus:ring-2 focus:ring-[#003498]/15"
-              />
+              From
+              <input type="month" value={fromMonth} onChange={handleFromChange} className={monthInputClass} />
             </label>
-            {selectedMonth && (
+            <label className="flex items-center gap-2 text-sm text-[#52657d]">
+              To
+              <input type="month" value={toMonth} onChange={handleToChange} className={monthInputClass} />
+            </label>
+            {(fromMonth || toMonth) && (
               <button
                 type="button"
-                onClick={() => setSelectedMonth('')}
+                onClick={() => {
+                  setFromMonth('')
+                  setToMonth('')
+                }}
                 className="rounded-full px-3 py-1.5 text-sm font-medium text-[#003498] transition hover:bg-[#e8eefb]"
               >
                 Clear
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={isExporting}
-              className="rounded-full border border-[#003498] px-4 py-2 text-sm font-semibold text-[#003498] transition hover:bg-[#003498] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isExporting ? 'Preparing PDF...' : 'Download PDF summary'}
-            </button>
+            <NetworkReportButton
+              registrations={registrations}
+              username={username}
+              initialFrom={fromMonth}
+              initialTo={toMonth}
+            />
           </div>
         </div>
 
