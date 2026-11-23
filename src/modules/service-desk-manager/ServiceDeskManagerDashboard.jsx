@@ -6,6 +6,7 @@ import {
   BranchIcon,
   ComputerIcon,
   DocumentIcon,
+  NetworkIcon,
   PreventiveIcon,
   SettingsIcon,
   ShieldIcon,
@@ -19,6 +20,7 @@ import { fetchUsers } from './userStore.js'
 import SettingsContent from '../../shared/components/SettingsContent.jsx'
 import ItRelatedInfoContent from '../../shared/components/ItRelatedInfoContent.jsx'
 import { MtoStatusContent } from '../../shared/components/MtoStatus.jsx'
+import { NetworkReportContent } from './NetworkReport.jsx'
 import PreventiveOperation from './priventive.jsx'
 import ItAwareness from './Itawareness.jsx'
 
@@ -70,6 +72,13 @@ function ServiceDeskManagerDashboard({ username }) {
         MTO Status
       </SidebarButton>
       <SidebarButton
+        active={activeView === 'network-report'}
+        onClick={() => setActiveView('network-report')}
+        icon={<NetworkIcon />}
+      >
+        Network Report
+      </SidebarButton>
+      <SidebarButton
         active={activeView === 'it-related-info'}
         onClick={() => setActiveView('it-related-info')}
         icon={<DocumentIcon />}
@@ -114,6 +123,8 @@ function ServiceDeskManagerDashboard({ username }) {
         <BranchEntryContent username={username} roleId="service-desk-manager" onBack={() => setActiveView('overview')} />
       ) : activeView === 'mto-status' ? (
         <MtoStatusContent username={username} roleId="service-desk-manager" onBack={() => setActiveView('overview')} />
+      ) : activeView === 'network-report' ? (
+        <NetworkReportContent username={username} onBack={() => setActiveView('overview')} />
       ) : activeView === 'settings' ? (
         <SettingsContent username={username} />
       ) : activeView === 'it-related-info' ? (

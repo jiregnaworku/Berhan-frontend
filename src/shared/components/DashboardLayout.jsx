@@ -221,9 +221,9 @@ export function DashboardLayout({ roleId, username, navAction, dashboardActive, 
         )}
         <aside className="hidden w-64 shrink-0 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col bg-[#003498] shadow-2xl">
           <div className="flex h-[5.1rem] items-center border-b border-white/10 px-5">
-            <a href={role.route} className="flex items-center bg-[#F9A804] px-3 py-1.5 rounded-xl shadow-sm transition hover:brightness-105">
-              <img src="/images/berhan.png" alt="Berhan Bank" className="h-9 w-auto object-contain" />
-            </a>
+<a href={role.route} className="flex items-center bg-white px-3 py-1.5 rounded-xl shadow-sm transition hover:brightness-95">
+  <img src="/images/berhan.png" alt="Berhan Bank" className="h-9 w-auto object-contain" />
+</a>
           </div>
           <nav className="flex flex-1 flex-col gap-1.5 px-3 py-4 overflow-y-auto" aria-label="Main navigation">
             <SidebarLink href={role.route} label="Dashboard" icon={<DashboardIcon />} active={isDashboardPage} />
