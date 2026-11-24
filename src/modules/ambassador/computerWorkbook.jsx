@@ -11,8 +11,12 @@ import {
   updateWorkbookRow,
 } from './computerWorkbookStore.js'
 import ComputerReportButton from './ComputerReportButton.jsx'
+import BulkEntryButton from '../../shared/components/Bulkentry.jsx'
 
 const PAGE_SIZE = 30
+const ACCESS_PAGE_SIZE = 40
+
+const norm = (value) => String(value ?? '').toLowerCase().trim()
 
 const emptyRow = {
   branchId: '',
@@ -28,6 +32,9 @@ const emptyRow = {
   kasperskyStatus: 'Updated',
   remark: '',
 }
+
+// Computers added by bulk entry still lack these two choices
+const needsDetails = (row) => !row.computerJob || !row.kasperskyStatus
 
 const fieldClass =
   'min-h-10 w-full rounded-xl border border-[#e3e8ef] bg-white px-3 text-sm text-[#1f2937] outline-none transition placeholder:text-[#a0aec0] focus:border-[#003498] focus:ring-2 focus:ring-[#003498]/15'
@@ -65,6 +72,7 @@ function Tag({ children, tone = 'plain' }) {
   const tones = {
     plain: 'bg-[#f1f4f9] text-[#52657d]',
     blue: 'bg-[#e8eefb] text-[#003498]',
+    amber: 'bg-amber-50 text-amber-700',
   }
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]}`}>
@@ -98,9 +106,12 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
   const [filterAmbassador, setFilterAmbassador] = useState('')
   const [filterKaspersky, setFilterKaspersky] = useState('')
   const [ambassadors, setAmbassadors] = useState([])
-  const [permissionBranchId, setPermissionBranchId] = useState('')
-  const [isTogglingEdit, setIsTogglingEdit] = useState(false)
+  const [isAccessOpen, setIsAccessOpen] = useState(false)
+  const [accessSearch, setAccessSearch] = useState('')
+  const [accessVisible, setAccessVisible] = useState(ACCESS_PAGE_SIZE)
+  const [togglingId, setTogglingId] = useState(null)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [filterNeedsDetails, setFilterNeedsDetails] = useState(false)
 
   useEffect(() => {
     Promise.all([fetchBranches(), fetchWorkbookRows(), fetchAmbassadors()])
@@ -171,11 +182,18 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
       status: row.status || 'Active',
       networkAgent: row.networkAgent || '',
       endpoint: row.endpoint || '',
-      kasperskyStatus: row.kasperskyStatus || 'Updated',
+      kasperskyStatus: row.kasperskyStatus || '',
       remark: row.remark || '',
     })
     setEditingId(row.id)
     setIsFormOpen(true)
+  }
+
+  // Computers saved by the bulk entry window appear at the top of the list
+  function handleBulkImported(savedRows) {
+    setRows((current) => [...savedRows, ...current])
+    setFilterNeedsDetails(true)
+    notify(`${savedRows.length} ${savedRows.length === 1 ? 'computer' : 'computers'} added. Fill in their details with Edit.`, 'success')
   }
 
   function startNewComputer() {
@@ -185,27 +203,51 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
     setIsFormOpen(true)
   }
 
-  const selectedPermissionBranch = branches.find((branch) => String(branch.id) === String(permissionBranchId))
-  const isManagerEditOn = Boolean(selectedPermissionBranch?.managerCanEdit)
+  // Kaspersky editing pop-up: the branch managers' editing is switched on or off per branch
+  const editingOnCount = branches.filter((branch) => branch.managerCanEdit).length
 
-  async function handleToggleManagerEdit() {
-    if (!selectedPermissionBranch) return
-    setIsTogglingEdit(true)
+  const accessBranches = useMemo(() => {
+    const tokens = norm(accessSearch).split(/\s+/).filter(Boolean)
+    return branches
+      .filter((branch) => {
+        const key = norm(`${branch.branchName} ${branch.branchCode}`)
+        return tokens.every((token) => key.includes(token))
+      })
+      .sort((a, b) => String(a.branchName).localeCompare(String(b.branchName)))
+  }, [branches, accessSearch])
+
+  function openAccess() {
+    setAccessSearch('')
+    setAccessVisible(ACCESS_PAGE_SIZE)
+    setIsAccessOpen(true)
+  }
+
+  useEffect(() => {
+    if (!isAccessOpen) return undefined
+    function handleEscape(event) {
+      if (event.key === 'Escape') setIsAccessOpen(false)
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isAccessOpen])
+
+  async function handleToggleManagerEdit(branch) {
+    setTogglingId(branch.id)
     try {
-      const saved = await setBranchManagerEdit(selectedPermissionBranch.id, !selectedPermissionBranch.managerCanEdit)
+      const saved = await setBranchManagerEdit(branch.id, !branch.managerCanEdit)
       setBranches((current) =>
-        current.map((branch) => (branch.id === saved.id ? { ...branch, managerCanEdit: saved.managerCanEdit } : branch)),
+        current.map((item) => (item.id === saved.id ? { ...item, managerCanEdit: saved.managerCanEdit } : item)),
       )
       notify(
         saved.managerCanEdit
-          ? 'Branch manager can now update the Net Agent and Endpoint of this branch.'
-          : 'Branch manager editing turned off for this branch.',
+          ? `Branch manager can now update the Net Agent and Endpoint of ${branch.branchName}.`
+          : `Branch manager editing turned off for ${branch.branchName}.`,
         'success',
       )
     } catch (toggleError) {
       notify(Object.values(toggleError.errors || {}).flat()[0] || toggleError.message)
     } finally {
-      setIsTogglingEdit(false)
+      setTogglingId(null)
     }
   }
 
@@ -242,7 +284,8 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
         const matchesAmbassador =
           !filterAmbassador || String(row.ambassadorName).toLowerCase().includes(filterAmbassador.toLowerCase())
         const matchesKaspersky = !filterKaspersky || String(row.kasperskyStatus) === filterKaspersky
-        return matchesSearch && matchesBranch && matchesAmbassador && matchesKaspersky
+        const matchesDetails = !filterNeedsDetails || needsDetails(row)
+        return matchesSearch && matchesBranch && matchesAmbassador && matchesKaspersky && matchesDetails
       })
       .map(({ row }) => row)
       .sort(
@@ -251,9 +294,9 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
           || String(a.ipAddress).localeCompare(String(b.ipAddress), undefined, { numeric: true }),
       )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [indexedRows, branches, searchText, filterBranch, filterAmbassador, filterKaspersky])
+  }, [indexedRows, branches, searchText, filterBranch, filterAmbassador, filterKaspersky, filterNeedsDetails])
 
-  useEffect(() => setVisibleCount(PAGE_SIZE), [searchText, filterBranch, filterAmbassador, filterKaspersky])
+  useEffect(() => setVisibleCount(PAGE_SIZE), [searchText, filterBranch, filterAmbassador, filterKaspersky, filterNeedsDetails])
 
   // Per-branch totals (over everything that matches) and the rows shown so far
   const branchStats = useMemo(() => {
@@ -281,7 +324,8 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
 
   const updatedCount = rows.filter((row) => row.kasperskyStatus === 'Updated').length
   const needsUpdateCount = rows.filter((row) => row.kasperskyStatus === 'Not updated').length
-  const hasFilters = Boolean(searchText || filterBranch || filterAmbassador || filterKaspersky)
+  const needsDetailsCount = rows.filter(needsDetails).length
+  const hasFilters = Boolean(searchText || filterBranch || filterAmbassador || filterKaspersky || filterNeedsDetails)
 
   return (
     <div className="mx-auto max-w-5xl text-[#1f2937]">
@@ -296,6 +340,17 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={openAccess}
+            className="flex items-center gap-2 rounded-full border border-[#003498] px-5 py-2 text-sm font-semibold text-[#003498] transition hover:bg-[#eef4ff]"
+          >
+            Kaspersky editing
+            {editingOnCount > 0 && (
+              <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white">{editingOnCount} on</span>
+            )}
+          </button>
+          <BulkEntryButton branches={branches} rows={rows} onImported={handleBulkImported} />
           <ComputerReportButton rows={rows} branches={branches} />
           <button
             type="button"
@@ -423,6 +478,7 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
                   placeholder="e.g. 192.168.1.10 or 12.5"
                 />
                 <WorkbookSelect name="kasperskyStatus" label="Status" value={form.kasperskyStatus} onChange={handleChange}>
+                  <option value="">Not set</option>
                   <option value="Updated">Updated</option>
                   <option value="Not updated">Not updated</option>
                 </WorkbookSelect>
@@ -467,40 +523,116 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
         </div>
       )}
 
-      {/* Branch manager editing switch */}
-      <section className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#f6f8fb] px-5 py-4">
-        <h2 className="text-sm font-semibold text-[#102d54]">Let a branch manager edit Kaspersky</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="w-52">
-            <select
-              aria-label="Branch"
-              value={permissionBranchId}
-              onChange={(event) => setPermissionBranchId(event.target.value)}
-              className={fieldClass}
-            >
-              <option value="">Select branch</option>
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.branchName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={isManagerEditOn}
-            disabled={!selectedPermissionBranch || isTogglingEdit}
-            onClick={handleToggleManagerEdit}
-            className="flex min-h-10 items-center gap-2.5 rounded-full bg-white px-4 py-1.5 text-sm font-medium text-[#52657d] transition hover:text-[#003498] disabled:cursor-not-allowed disabled:opacity-50"
+      {/* Kaspersky editing pop-up */}
+      {isAccessOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#102d54]/50 p-4 backdrop-blur-sm"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setIsAccessOpen(false)
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="kaspersky-access-title"
+            className="my-8 w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-8"
           >
-            <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${isManagerEditOn ? 'bg-emerald-500' : 'bg-gray-300'}`}>
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${isManagerEditOn ? 'translate-x-4' : 'translate-x-0.5'}`} />
-            </span>
-            {isTogglingEdit ? 'Saving...' : isManagerEditOn ? 'Editing on' : 'Editing off'}
-          </button>
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h2 id="kaspersky-access-title" className="text-xl font-bold text-[#102d54]">Kaspersky editing</h2>
+                <p className="mt-1 text-sm text-[#718096]">
+                  Switch a branch on so its branch manager can update the Net Agent and Endpoint. Switch it off when they are done.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAccessOpen(false)}
+                aria-label="Close"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#8a98ab] transition hover:bg-[#f1f4f9] hover:text-[#1f2937]"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="mb-3 text-sm text-[#52657d]">
+              Editing is on for <strong className="text-[#102d54]">{editingOnCount}</strong> of {branches.length}{' '}
+              {branches.length === 1 ? 'branch' : 'branches'}.
+            </p>
+
+            <input
+              type="text"
+              value={accessSearch}
+              onChange={(event) => {
+                setAccessSearch(event.target.value)
+                setAccessVisible(ACCESS_PAGE_SIZE)
+              }}
+              placeholder="Search a branch by name or code"
+              className={fieldClass}
+            />
+
+            <div className="mt-3 max-h-80 overflow-y-auto rounded-2xl border border-[#e8edf3]">
+              {accessBranches.length === 0 ? (
+                <p className="px-4 py-8 text-center text-sm text-[#718096]">
+                  {branches.length === 0 ? "You don't have any branches yet." : 'No branch found.'}
+                </p>
+              ) : (
+                <ul className="divide-y divide-[#f0f3f7]">
+                  {accessBranches.slice(0, accessVisible).map((branch) => {
+                    const isOn = Boolean(branch.managerCanEdit)
+                    const isBusy = togglingId === branch.id
+                    return (
+                      <li key={branch.id} className={`flex items-center gap-3 px-4 py-3 transition ${isOn ? 'bg-emerald-50/60' : ''}`}>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-[#102d54]">{branch.branchName}</span>
+                          <span className="block truncate text-xs text-[#8a98ab]">
+                            {branch.branchCode ? `${branch.branchCode} • ` : ''}
+                            <span className={isOn ? 'font-semibold text-emerald-700' : ''}>{isOn ? 'Editing on' : 'Editing off'}</span>
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={isOn}
+                          aria-label={`Kaspersky editing for ${branch.branchName}`}
+                          disabled={isBusy}
+                          onClick={() => handleToggleManagerEdit(branch)}
+                          className="shrink-0 rounded-full p-1 transition disabled:cursor-wait disabled:opacity-50"
+                        >
+                          <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${isOn ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${isOn ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                  {accessBranches.length > accessVisible && (
+                    <li className="p-2">
+                      <button
+                        type="button"
+                        onClick={() => setAccessVisible((count) => count + ACCESS_PAGE_SIZE)}
+                        className="w-full rounded-xl bg-[#f6f8fb] py-2 text-xs font-semibold text-[#003498] transition hover:bg-[#e8eefb]"
+                      >
+                        Show {Math.min(ACCESS_PAGE_SIZE, accessBranches.length - accessVisible)} more ({accessBranches.length - accessVisible} not shown yet)
+                      </button>
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsAccessOpen(false)}
+                className="rounded-full bg-[#003498] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#00246B]"
+              >
+                Done
+              </button>
+            </div>
+          </div>
         </div>
-      </section>
+      )}
 
       {/* Search and filters */}
       <div className="mb-5 flex flex-wrap items-end gap-3">
@@ -560,6 +692,7 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
               setFilterBranch('')
               setFilterAmbassador('')
               setFilterKaspersky('')
+              setFilterNeedsDetails(false)
             }}
             className="min-h-10 rounded-full px-4 text-sm font-medium text-[#003498] transition hover:bg-[#eef2f7]"
           >
@@ -574,7 +707,18 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
           {filteredRows.length} {filteredRows.length === 1 ? 'computer' : 'computers'}
           {hasFilters && <span className="ml-2 font-normal text-[#8a98ab]">of {rows.length}</span>}
         </h2>
-        <p className="flex items-center gap-4 text-xs text-[#52657d]">
+        <p className="flex flex-wrap items-center gap-4 text-xs text-[#52657d]">
+          {needsDetailsCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilterNeedsDetails((on) => !on)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                filterNeedsDetails ? 'bg-[#003498] text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+              }`}
+            >
+              {needsDetailsCount} need details
+            </button>
+          )}
           <span className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             {updatedCount} up to date
@@ -658,6 +802,7 @@ export function ComputerWorkbookContent({ onBack, username, roleId = 'ambassador
                             {row.operatingSystem && <Tag>{row.operatingSystem}</Tag>}
                             {row.chequeScanner === 'Yes' && <Tag tone="blue">Cheque scanner</Tag>}
                             {row.status !== 'Active' && <Tag>{row.status}</Tag>}
+                            {needsDetails(row) && <Tag tone="amber">Details needed</Tag>}
                           </div>
                         </div>
 
